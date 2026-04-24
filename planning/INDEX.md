@@ -16,7 +16,7 @@
 | [05-PRICING-AND-MONETIZATION.md](05-PRICING-AND-MONETIZATION.md) | Pricing tiers, unit economics, billing model, revenue targets |
 | [06-METRICS-AND-ANALYTICS.md](06-METRICS-AND-ANALYTICS.md) | Product KPIs, business metrics, operational SLOs, analytics instrumentation |
 | [07-RISKS.md](07-RISKS.md) | Full risk register — technical, business, security, operational |
-| [08-90-DAY-SPRINT.md](08-90-DAY-SPRINT.md) | Week-by-week execution plan from day 1 to first revenue |
+| [08-90-DAY-SPRINT.md](08-90-DAY-SPRINT.md) | Sprint-by-sprint execution plan — ordered task batches with exit checks, parallel agent markers, and GTM sprints |
 
 ---
 

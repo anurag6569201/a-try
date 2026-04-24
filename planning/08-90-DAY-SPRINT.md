@@ -1,364 +1,460 @@
-# 90-Day Sprint Plan
+# Execution Plan
 
-> Week-by-week execution from day 1 to first revenue.
-> Assumes 1–2 engineers, full-time.
-> Dates anchored to start: **2026-04-28** (Week 1).
-
----
-
-## Week 1 — Apr 28 – May 4 | Foundation: GitHub App + Azure
-
-**Phase:** 0 — Foundation
-
-| Day | Task |
-|---|---|
-| Mon | Register GitHub App on GitHub. Set permissions. Generate private key. Store in Azure Key Vault. |
-| Mon | Create Azure subscription resources via Terraform: Resource Group, Key Vault, App Insights, PostgreSQL. |
-| Tue | Scaffold monorepo: `pnpm init`, Turborepo config, TypeScript base config, ESLint + Prettier. |
-| Tue | Create `packages/domain` — enums: run states, failure categories, modes, event types. |
-| Wed | Terraform: Azure Service Bus namespace + queue. Azure Blob Storage account + containers. |
-| Wed | Create `docker-compose.yml` for local dev: Postgres + Azurite (Service Bus emulator). |
-| Thu | Create `.env.example` with all required env vars documented. |
-| Thu | Bootstrap GitHub Actions CI: lint + type-check + test jobs. |
-| Fri | Create `packages/schemas` — Zod schema for GitHub `pull_request.opened` webhook payload. |
-| Fri | Verify: CI passes on empty scaffold. Terraform apply succeeds. Key Vault accessible. |
-
-**Exit check:** Can receive and log a fake GitHub webhook event locally.
+> Organised by **sprints** (batches of related tasks), not calendar time.
+> Each sprint is a prompt-session or agent-run unit — complete one sprint's exit check before starting the next.
+> Order is strict. Sprints within the same phase can be parallelised across agents where noted.
 
 ---
 
-## Week 2 — May 5 – May 11 | Foundation: Webhook API + DB
+## How to use this plan
 
-**Phase:** 0 — Foundation
-
-| Day | Task |
-|---|---|
-| Mon | Create `packages/db` — database schema migration setup (`node-pg-migrate`). |
-| Mon | Write migrations for: `installation`, `repository`, `pull_request`, `run` tables. |
-| Tue | Write migrations for: `plan`, `test_case`, `result`, `artifact`, `comment_record`, `model_trace`, `audit_event` tables. |
-| Tue | Write typed repository functions for `run` CRUD operations. |
-| Wed | Create `apps/webhook-api` — Azure Function project structure. |
-| Wed | Implement webhook signature validation (HMAC-SHA256 using GitHub App secret). |
-| Thu | Implement `pull_request.opened` handler: validate → normalize → enqueue to Service Bus → return 202. |
-| Thu | Implement `pull_request.synchronize` and `.reopened` handlers. |
-| Fri | Deploy `apps/webhook-api` to Azure Functions (dev environment). |
-| Fri | Test: send fake GitHub PR event → event appears in Service Bus queue → run record created in DB. |
-
-**Exit check (Phase 0 complete):** Fake PR event received, validated, stored as run record. Terraform dev environment fully provisioned.
+- Each sprint is a self-contained unit of work for a coding agent or agent cluster.
+- The **Exit check** is the acceptance test. Do not advance until it passes.
+- Tasks marked `[PARALLEL]` can be delegated to separate agents simultaneously.
+- Tasks marked `[HUMAN]` require a manual action (register, deploy, approve, send) that a coding agent cannot do.
+- GTM sprints are independent of engineering sprints and can run in parallel with Phase 2 onward.
 
 ---
 
-## Week 3 — May 12 – May 18 | Alpha: GitHub Adapter + Vercel Adapter
+## Phase 0 — Foundation
 
-**Phase:** 1 — Alpha
+### Sprint 0.1 — GitHub App + Azure Baseline `[HUMAN]`
 
-| Day | Task |
-|---|---|
-| Mon | Create `packages/github-adapter` — Octokit setup, installation token refresh logic. |
-| Mon | Implement GitHub Check: create (with status `in_progress`) and update (conclusion `success`/`failure`). |
-| Tue | Implement sticky PR comment upsert: post on first run, edit in place on subsequent runs. |
-| Tue | Implement PR metadata fetch: head SHA, description, author login, fork detection. |
-| Wed | Create `packages/vercel-adapter` — Vercel API client (deployment list for a repo + branch). |
-| Wed | Implement preview URL resolution: query Vercel API for latest deployment matching head SHA. |
-| Thu | Implement GitHub deployment status fallback: poll `GET /repos/{owner}/{repo}/deployments` events. |
-| Thu | Implement `waiting_for_preview` logic: return signal if no preview found yet. |
-| Fri | Write unit tests for github-adapter (mock Octokit) and vercel-adapter (mock Vercel API). |
-| Fri | Test end-to-end: fake PR event → github-adapter creates Check → vercel-adapter resolves preview URL. |
+Tasks:
+- Register GitHub App on GitHub. Set minimum permissions: Pull requests rw, Issues w, Checks rw, Contents r, Metadata r, Commit statuses rw, Deployments r.
+- Generate private key. Store in Azure Key Vault.
+- Provision Azure resources via Terraform: Resource Group, Key Vault, App Insights, PostgreSQL, Service Bus, Blob Storage, Container Registry.
+- Record all resource names and connection strings in `.env.example`.
+
+Exit check: Azure resources exist, GitHub App is registered, private key is in Key Vault, `.env.example` is complete.
 
 ---
 
-## Week 4 — May 19 – May 25 | Alpha: Orchestrator + State Machine
+### Sprint 0.2 — Monorepo Scaffold `[PARALLEL with 0.1]`
 
-**Phase:** 1 — Alpha
+Tasks:
+- `pnpm init`, Turborepo config, TypeScript base `tsconfig.json`, ESLint + Prettier config.
+- Create folder structure: `apps/webhook-api`, `apps/orchestrator`, `apps/browser-runner`, all `packages/` directories.
+- Bootstrap GitHub Actions CI: lint + type-check + test jobs on push.
+- `docker-compose.yml` for local dev: Postgres + Azurite (Service Bus + Blob emulator).
 
-| Day | Task |
-|---|---|
-| Mon | Create `apps/orchestrator` — Azure Container App project structure. |
-| Mon | Implement Service Bus consumer: dequeue message, route by event type. |
-| Tue | Implement state machine: `queued → waiting_for_preview → planning → running → analyzing → reporting → completed`. |
-| Tue | Implement superseded SHA detection: on new commit push, mark old run as `canceled`. |
-| Wed | Implement preview polling loop: retry every 30 seconds, timeout after 15 minutes → `blocked_environment`. |
-| Wed | Implement run coordination: call preview resolver → on success, advance to `planning` state. |
-| Thu | Implement error handling: `failed` state transition on unrecoverable errors, retry policy for transient errors. |
-| Thu | Wire orchestrator to github-adapter: update GitHub Check status on each state transition. |
-| Fri | Deploy orchestrator to Azure Container Apps (dev environment). |
-| Fri | Test: PR event → orchestrator processes → state transitions visible in DB → GitHub Check updated. |
+Exit check: `pnpm lint` and `pnpm typecheck` pass on empty scaffold. CI green.
 
 ---
 
-## Week 5 — May 26 – Jun 1 | Alpha: Browser Runner + Playwright
+### Sprint 0.3 — Domain Package + DB Schema
 
-**Phase:** 1 — Alpha
+Tasks:
+- `packages/domain`: enums for run states (`queued`, `waiting_for_preview`, `planning`, `running`, `analyzing`, `reporting`, `completed`, `failed`, `blocked_environment`, `needs_human`, `canceled`), failure categories, modes, event types.
+- `packages/db`: migration tooling setup (`node-pg-migrate`). Write migrations for all 11 entities: `installation`, `repository`, `pull_request`, `run`, `plan`, `test_case`, `result`, `artifact`, `comment_record`, `model_trace`, `audit_event`.
+- Typed repository functions for `run` CRUD.
 
-| Day | Task |
-|---|---|
-| Mon | Create `packages/runner-playwright` — Playwright setup, step executor interface. |
-| Mon | Implement smoke step: `navigate` to URL, assert HTTP 200. |
-| Tue | Implement smoke steps: `screenshot` capture, `assert_title`, `assert_visible`. |
-| Tue | Implement artifact capture: screenshot to buffer, trace on failure start/stop. |
-| Wed | Create `apps/browser-runner` — Docker image (Node 20 + Playwright Chromium, pinned version). |
-| Wed | Implement runner entrypoint: accept run plan as JSON env var, execute steps, output structured result JSON. |
-| Thu | Implement artifact upload to Azure Blob Storage: each screenshot + trace stored with signed URL returned. |
-| Thu | Create Azure Container Apps Job definition (Terraform). |
-| Fri | Build Docker image, push to Azure Container Registry. |
-| Fri | Test: trigger job manually with a test URL → screenshots appear in Blob Storage → result JSON correct. |
+Exit check: `pnpm db:migrate` runs without error. All tables exist in local Postgres. `run` CRUD functions pass unit tests.
 
 ---
 
-## Week 6 — Jun 2 – Jun 8 | Alpha: Reporter + M1 Validation
+### Sprint 0.4 — Zod Schemas
 
-**Phase:** 1 — Alpha
+Tasks:
+- `packages/schemas`: Zod schema for GitHub `pull_request.opened`, `.synchronize`, `.reopened` webhook payloads.
+- Zod schema for Service Bus message envelopes.
+- Zod schema for run creation and state transition events.
 
-| Day | Task |
-|---|---|
-| Mon | Create `packages/reporter` — PR comment Markdown formatter. |
-| Mon | Implement comment body: overall result badge, step table (pass/fail per step), artifact links, metadata footer. |
-| Tue | Implement GitHub Check output body: summary + step breakdown. |
-| Tue | Wire orchestrator → reporter: after runner completes, call reporter to update comment + check. |
-| Wed | Integrate full pipeline: webhook → queue → orchestrator → runner → reporter. |
-| Wed | Set up one internal repo as the first onboarded installation. |
-| Thu | Open a real PR on the internal repo. Observe the full end-to-end flow. |
-| Thu | Verify: screenshot in PR comment, GitHub Check shows pass/fail, DB state is correct. |
-| Fri | **M1 retrospective:** Is preview resolution reliable? Are artifacts useful? |
-| Fri | Document top 3 issues found. Fix critical ones before advancing. |
+Exit check: All schemas parse valid fixture payloads. Invalid payloads produce typed errors.
 
-**Exit check (M1 — Internal Alpha):** End-to-end loop working on one internal repo. Screenshot and trace visible in PR. GitHub Check shows result. Superseded SHA cancels old run.
+**Phase 0 complete** when all four sprints are done.
 
 ---
 
-## Week 7 — Jun 9 – Jun 15 | Beta: Parser + YAML Validation
+## Phase 1 — Alpha: Core Loop
 
-**Phase:** 2 — Beta
+Goal: PR open → preview URL resolved → Playwright smoke → result in GitHub PR.
 
-| Day | Task |
-|---|---|
-| Mon | Create `packages/parser` — marker extraction regex for `<!-- previewqa:start/end -->`. |
-| Mon | Implement YAML parse from extracted block. |
-| Tue | Implement Zod schema validation for PR instruction YAML (v1 spec). |
-| Tue | Implement parse error reporting: format validation errors into clear PR comment guidance. |
-| Wed | Add Zod schemas for all step types: `navigate`, `fill`, `click`, `assert_visible`, `assert_not_visible`, `assert_title`. |
-| Wed | Write golden fixture tests: 10 valid YAML inputs, 10 invalid inputs with expected error messages. |
-| Thu | Wire parser into orchestrator: after preview resolved, parse PR instructions before planning. |
-| Thu | Handle `parse.not_found` → default to smoke mode. Handle `parse.error` → post error comment + run smoke. |
-| Fri | Test: open PR with valid QA block → parser extracts and validates → run proceeds. Open PR with invalid block → error comment posted. |
+### Sprint 1.1 — Webhook API `[PARALLEL with 1.2]`
 
----
+Tasks:
+- `apps/webhook-api`: Azure Function project.
+- Implement HMAC-SHA256 webhook signature validation.
+- Handle `pull_request.opened`, `.synchronize`, `.reopened`: validate → normalize → enqueue to Service Bus → return 202.
+- Handle GitHub deployment status events for preview detection.
+- Deploy to Azure Functions (dev environment).
 
-## Week 8 — Jun 16 – Jun 22 | Beta: Planner + AI + Instruction Mode
-
-**Phase:** 2 — Beta
-
-| Day | Task |
-|---|---|
-| Mon | Create `packages/ai` — Azure OpenAI client. Model names from config only, never hardcoded. |
-| Mon | Implement `plan_normalizer` prompt: convert YAML step to canonical Playwright step representation. |
-| Tue | Create `packages/planner` — instruction-to-plan normalization. |
-| Tue | Implement mode routing: `smoke` → default plan, `instruction` → explicit steps only, `hybrid` → both. |
-| Wed | Implement `plan` + `test_case` DB record creation from normalized planner output. |
-| Wed | Implement `failure_summarizer` prompt: given runner output, produce human-readable failure explanation. |
-| Thu | Implement `risk_classifier` prompt: classify failure as `product_bug | test_bug | environment_issue | flaky | needs_clarification`. |
-| Thu | Log all prompt metadata to `model_trace` table: input token count, output token count, model, latency. |
-| Fri | Test: valid YAML instruction → planner → explicit test cases run by runner → result classified by AI. |
-| Fri | Run golden fixture tests for all three modes. |
+Exit check: Send fake `pull_request.opened` payload → event appears in Service Bus queue → run record created in DB → 202 returned within 500ms.
 
 ---
 
-## Week 9 — Jun 23 – Jun 29 | Beta: Commands + Auth Profiles
+### Sprint 1.2 — GitHub Adapter + Vercel Adapter `[PARALLEL with 1.1]`
 
-**Phase:** 2 — Beta
+Tasks:
+- `packages/github-adapter`: Octokit setup, installation token refresh. Implement GitHub Check create/update. Implement sticky PR comment upsert. Implement PR metadata fetch (head SHA, description, author, fork flag).
+- `packages/vercel-adapter`: Vercel API client. Resolve preview URL for repo + branch + SHA. GitHub deployment status fallback. Return `waiting_for_preview` signal if not found yet.
+- Unit tests for both packages (mocked external APIs).
 
-| Day | Task |
-|---|---|
-| Mon | Add `issue_comment` webhook handler to `apps/webhook-api`. |
-| Mon | Implement command parser: detect `/qa rerun`, `/qa smoke`, `/qa help` in comment body. |
-| Tue | Implement `/qa rerun`: cancel current run for PR, create new run for head SHA. |
-| Tue | Implement `/qa smoke`: create smoke-only run for head SHA, ignoring QA block. |
-| Wed | Implement `/qa help`: post command reference comment to PR. |
-| Wed | Implement commenter authorization check: only repo collaborators can trigger commands. |
-| Thu | Implement login profile support: named profile in YAML → Key Vault secret reference. |
-| Thu | Implement Playwright storage-state login: fetch credential from Key Vault, apply at runner startup. |
-| Fri | Test: open PR → `/qa rerun` in comment → new run created. `/qa smoke` triggers smoke-only run. Login profile resolves credentials. |
+Exit check: `github-adapter` creates a real GitHub Check on a test repo. `vercel-adapter` resolves a real preview URL given valid credentials.
 
 ---
 
-## Week 10 — Jul 7 – Jul 13 | M2 Validation + Partner Outreach
+### Sprint 1.3 — Orchestrator + State Machine
 
-**Phase:** 2 — Beta (wrap-up)
+Tasks:
+- `apps/orchestrator`: Azure Container App project, Service Bus consumer.
+- State machine: all transitions from `queued` through `completed` / `failed`.
+- Superseded SHA detection: new commit push → old run → `canceled`.
+- Preview polling loop: retry every 30s, timeout after 15min → `blocked_environment`.
+- Wire to `github-adapter`: update GitHub Check on each state transition.
+- Deploy to Azure Container Apps (dev environment).
 
-| Day | Task |
-|---|---|
-| Mon | Run M2 validation checklist: parse error reporting, hybrid mode, rerun commands, AI summaries, auth profiles. |
-| Mon | Fix any M2 blockers found. |
-| Tue | Survey 3–5 internal developers: "Are you using the QA block? Is the failure summary useful? 1–5 rating." |
-| Tue | Gate B check: > 70% of PRs on internal repo have valid QA blocks? |
-| Wed | Begin outreach to 10 Vercel-heavy startup eng leads (design partners). Personalized DMs. |
-| Wed | Set up waitlist landing page (simple HTML + email capture — Notion, Carrd, or Framer). |
-| Thu | **Product Hunt prep:** Record 60-second demo video of the full PR → bot → result flow. |
-| Thu | Write Product Hunt listing copy (tagline, description, first comment). |
-| Fri | **M2 retrospective:** What is working? What is not? Top 3 issues. |
-| Fri | Publish ship-in-public Twitter/X thread: "Here's what we built in 10 weeks." |
-
-**Exit check (M2 — Internal Beta):** Instruction mode, hybrid mode, rerun commands, AI summaries, auth profiles all working.
+Exit check: PR event → orchestrator processes → state transitions in DB → GitHub Check updated in real GitHub UI.
 
 ---
 
-## Week 11 — Jul 14 – Jul 20 | Hardening: Security + Fork Policy
+### Sprint 1.4 — Playwright Runner + Artifact Upload `[PARALLEL with 1.3 after 1.2 is done]`
 
-**Phase:** 3 — Hardening
+Tasks:
+- `packages/runner-playwright`: step executor. Smoke steps: `navigate`, `assert_200`, `screenshot`, `assert_title`, `assert_visible`. Trace capture on failure.
+- `apps/browser-runner`: Docker image (Node 20 + Playwright Chromium, pinned version). Entrypoint: accept plan as JSON, execute steps, return structured result JSON. Upload screenshots + traces to Azure Blob Storage.
+- Azure Container Apps Job definition in Terraform.
+- Build image, push to Azure Container Registry.
 
-| Day | Task |
-|---|---|
-| Mon | Implement fork PR detection in orchestrator: `pull_request.head.repo.fork === true`. |
-| Mon | Implement fork policy enforcement: block authenticated runs, downgrade to smoke-only. |
-| Tue | Log `audit_event` for every fork policy decision (fork detected, run downgraded, run blocked). |
-| Tue | Write integration test: fork PR → authenticated run blocked → smoke-only proceeds → audit event logged. |
-| Wed | Implement input sanitization: PR title, body, comment text treated as untrusted before passing to LLM. |
-| Wed | Implement secret redaction in reporter: scan comment body for token-like strings before posting. |
-| Thu | Implement per-step and per-run timeouts with graceful cancellation. |
-| Thu | Implement retry policy: 3 attempts with exponential backoff for transient errors. |
-| Fri | Implement failure classification in reporter: `flaky` shown distinctly from `product_bug`. |
+Exit check: Trigger job manually against a live URL → screenshots appear in Blob Storage → result JSON correct → signed artifact URLs accessible.
 
 ---
 
-## Week 12 — Jul 21 – Jul 27 | Hardening: Observability + Cost Controls
+### Sprint 1.5 — Reporter + M1 Integration
 
-**Phase:** 3 — Hardening
+Tasks:
+- `packages/reporter`: format sticky PR comment (result badge, step table, artifact links, metadata footer). Format GitHub Check output body.
+- Wire orchestrator → reporter: after runner completes, update comment + check.
+- Full pipeline integration test: webhook → queue → orchestrator → runner → reporter.
+- Onboard one internal repo as first installation.
 
-| Day | Task |
-|---|---|
-| Mon | Create `packages/observability` — OpenTelemetry setup, Pino logger factory. |
-| Mon | Add correlation ID propagation: every Service Bus message and job carries `runId`. |
-| Tue | Wire OpenTelemetry spans across: webhook-api, orchestrator, browser-runner, reporter. |
-| Tue | Configure App Insights: export OTEL spans, set up custom metrics (run duration, resolution latency). |
-| Wed | Implement cost controls: concurrency cap per installation, video-on-failure-only, max cases per PR. |
-| Wed | Configure Azure Blob lifecycle rules: screenshot 30d, trace 14d, video 14d, log 30d. |
-| Thu | Set up 8 App Insights alert rules (see Phase 3 in development roadmap). |
-| Thu | Build App Insights dashboard: operational view (active runs, queue depth, error rate). |
-| Fri | Build App Insights dashboard: product health view (runs/day, false failure rate, mode breakdown). |
-| Fri | Test all alert rules by simulating failure conditions in dev environment. |
+Exit check **(M1)**: Open a real PR on the internal repo. Smoke run executes automatically. Screenshot visible in PR comment. GitHub Check shows pass or fail. Superseded SHA cancels old run without manual intervention.
 
 ---
 
-## Week 13 — Jul 28 – Aug 3 | Hardening: Design Partners Onboarded
+## Phase 2 — Beta: Instruction-Driven
 
-**Phase:** 3 — Hardening
+Goal: Structured YAML blocks in PR descriptions drive the test plan.
 
-| Day | Task |
-|---|---|
-| Mon | Onboard first external design partner repo (1 of 3). Walk them through PR template + first run. |
-| Mon | Fix any onboarding friction issues found. |
-| Tue | Onboard second design partner. |
-| Wed | Write 5 operational runbooks: preview not found, runner crash, GitHub auth failure, Vercel token failure, queue stuck. |
-| Thu | Onboard third design partner. |
-| Thu | Monitor: false failure rate, preview resolution rate, run duration across all 3 external repos. |
-| Fri | Weekly metrics review: operational SLOs vs. targets. Any below threshold → prioritize fix. |
+### Sprint 2.1 — Parser + YAML Validation `[PARALLEL with 2.2]`
 
----
+Tasks:
+- `packages/parser`: extract `<!-- previewqa:start/end -->` block from PR body. Parse YAML. Validate against versioned Zod schema.
+- Parse error reporting: format validation errors → post clear guidance comment to PR.
+- Zod schemas for all step types: `navigate`, `fill`, `click`, `assert_visible`, `assert_not_visible`, `assert_title`, `screenshot`.
+- Golden fixture tests: 10 valid YAML inputs + 10 invalid inputs with expected error messages.
+- Wire into orchestrator: parse PR instructions after preview resolved. `parse.not_found` → smoke. `parse.error` → error comment + smoke.
 
-## Week 14 — Aug 4 – Aug 10 | M3 Validation + Product Hunt Launch
-
-**Phase:** 3 — Hardening (wrap-up)
-
-| Day | Task |
-|---|---|
-| Mon | Run M3 validation checklist: fork policy, alerting, runbooks, false failure rate < 5%, 3+ external repos. |
-| Mon | Gate C check: Is internal + external usage strong and stable? |
-| Tue | **Product Hunt launch day.** Post at 12:01 AM PST. Share across all channels. |
-| Tue | Respond to every Product Hunt comment within 4 hours. |
-| Wed | Monitor: installs from Product Hunt. Engage with all new installs. |
-| Thu | "Show HN: I built a bot that browser-tests your Vercel previews" — post to Hacker News. |
-| Fri | **M3 retrospective.** Count: installs, active repos, false failure rate, design partner NPS. |
-| Fri | List GitHub App on GitHub Marketplace (free tier). Write Marketplace listing copy. |
-
-**Exit check (M3 — Private Beta):** 3+ external repos running, false failure rate < 5%, alerting live, Marketplace listing published.
+Exit check: Valid YAML block → parser returns typed plan. Invalid block → error comment posted to real PR. `parse.not_found` → smoke runs.
 
 ---
 
-## Week 15–18 — Aug 11 – Sep 7 | Phase 4: Repo-Aware Intelligence
+### Sprint 2.2 — AI Package `[PARALLEL with 2.1]`
 
-**Phase:** 4 — Intelligence
+Tasks:
+- `packages/ai`: Azure OpenAI client (model deployment names from config, never hardcoded).
+- Prompt `plan_normalizer`: YAML step → canonical Playwright step.
+- Prompt `failure_summarizer`: runner output → human-readable failure explanation.
+- Prompt `risk_classifier`: classify as `product_bug | test_bug | environment_issue | flaky | needs_clarification`.
+- Log all prompt calls to `model_trace` table: input tokens, output tokens, model, latency.
+- Golden fixture tests for each prompt.
 
-| Week | Focus |
-|---|---|
-| Week 15 | Changed-file heuristics: parse PR diff, map changed files to affected routes/components |
-| Week 16 | AI-assisted plan suggestions: given changed files + existing plan, suggest missing coverage as PR comment |
-| Week 17 | `pgvector` retrieval: embed past run summaries, retrieve similar past runs for failure context |
-| Week 18 | Prompt regression test suite: golden fixtures for planner and summarizer, run in CI |
-
----
-
-## Week 19–20 — Sep 8 – Sep 21 | Phase 5: Multi-Tenancy + Billing
-
-**Phase:** 5 — Launch readiness
-
-| Week | Focus |
-|---|---|
-| Week 19 | Per-installation data isolation, concurrency rate limiting, quota enforcement in orchestrator |
-| Week 20 | Stripe billing integration: subscription plans, metered overage billing, upgrade CTA in PR comment |
+Exit check: Each prompt returns correct output on 5 fixture inputs. `model_trace` rows written to DB. No model name hardcoded anywhere.
 
 ---
 
-## Week 21–22 — Sep 22 – Oct 5 | Phase 5: Onboarding + Dashboard
+### Sprint 2.3 — Planner + Instruction Mode
 
-**Phase:** 5 — Launch readiness
+Tasks:
+- `packages/planner`: convert validated instructions → `plan` + `test_case` DB records.
+- Mode routing: `smoke` → default plan, `instruction` → explicit steps, `hybrid` → explicit + smoke appended.
+- AI-assisted step normalization via `packages/ai` for ambiguous selectors.
 
-| Week | Focus |
-|---|---|
-| Week 21 | GitHub App install → onboarding flow → first run triggered, per-repo config wizard |
-| Week 22 | `apps/dashboard` — run history, artifact browser, repo config, installation management |
-
----
-
-## Week 23 — Oct 6 – Oct 12 | Security Review + Runbooks
-
-**Phase:** 5 — Launch readiness
-
-| Day | Task |
-|---|---|
-| Mon–Tue | Security review: secrets audit, fork policy test, dependency vulnerability scan, GitHub App permission audit |
-| Wed–Thu | Write remaining 5 runbooks (total 10 required for M4) |
-| Fri | Fix all security review findings. Deploy fixes to staging. |
+Exit check: Valid YAML instruction → planner → explicit test cases → runner executes them → AI classifies result. All three modes produce correct plans on fixture inputs.
 
 ---
 
-## Week 24 — Oct 13 – Oct 19 | M4: Launch
+### Sprint 2.4 — PR Commands + Auth Profiles
 
-**Phase:** 5 — Launch readiness
+Tasks:
+- `apps/webhook-api`: `issue_comment` event handler. Detect `/qa rerun`, `/qa smoke`, `/qa help`.
+- `/qa rerun`: cancel current run, create new run for head SHA.
+- `/qa smoke`: create smoke-only run ignoring QA block.
+- `/qa help`: post command reference comment.
+- Commenter authorization: only repo collaborators can trigger commands.
+- Login profile support: named profile in YAML → Key Vault secret reference → Playwright `storageState` at runner startup.
 
-| Day | Task |
-|---|---|
-| Mon | Run M4 launch bar checklist: all items must be true before proceeding |
-| Tue | Enable paid tiers in Stripe. Deploy pricing page. |
-| Wed | **Launch email to waitlist.** Subject: "Preview QA Agent is live — start your free trial." |
-| Thu | Social push: Twitter/X, LinkedIn, Indie Hackers, relevant Slack communities. |
-| Fri | Monitor: conversions, installs, run volume, errors. Respond to all support emails same day. |
-
-**Exit check (M4 — Launch Candidate):** Paid tiers live, first paying customers, ≥ 50 total internal PR runs logged, all launch bar items checked.
+Exit check **(M2)**: `/qa rerun` creates new run. `/qa smoke` ignores QA block. Login profile resolves to credential. AI failure summary appears in PR comment on failure. Hybrid mode runs explicit + smoke steps.
 
 ---
 
-## Post-launch: Month 4–6 (Oct 20 – Dec 31)
+## Phase 3 — Hardening
 
-| Activity | Target |
-|---|---|
-| Weekly: metrics review | MRR, installs, churn, false failure rate |
-| Monthly: user interview | Talk to 3 active users + 1 churned user |
-| Month 4: newsletter sponsorship | One sponsored post in Bytes.dev or TLDR Tech |
-| Month 4: Vercel partnership outreach | Email Vercel ecosystem team about Marketplace listing |
-| Month 5: Linear integration | Build and ship QA run → Linear issue link |
-| Month 6: First Enterprise inquiry | Close first Enterprise deal if inbound |
-| Month 6: revenue target | $10K MRR |
+Goal: Safe and stable for 3–5 external repos.
+
+### Sprint 3.1 — Fork Policy + Input Security `[PARALLEL with 3.2]`
+
+Tasks:
+- Fork detection: `pull_request.head.repo.fork === true` → block authenticated runs, downgrade to smoke-only.
+- `audit_event` logged for every fork policy decision.
+- Input sanitization: PR title, body, comment text treated as untrusted before any LLM call.
+- Secret redaction in reporter: scan comment body before posting.
+- Integration test: fork PR → authenticated run blocked → smoke-only → audit event logged.
+
+Exit check: Fork PR triggers smoke-only. `audit_event` row exists. Reporter comment contains no raw tokens or secrets.
 
 ---
 
-## Weekly operating rhythm
+### Sprint 3.2 — Retry, Timeouts, Failure Classification `[PARALLEL with 3.1]`
 
-Every week, regardless of phase:
+Tasks:
+- Per-step timeout (configurable, default 30s). Per-run hard kill (default 10 min).
+- Retry policy: 3 attempts, exponential backoff, transient error detection.
+- Graceful cancellation: superseded or timed-out runs release resources and update GitHub Check.
+- Failure classification surfaced distinctly in reporter: `flaky` vs. `product_bug` vs. `environment_issue`.
 
-| Day | Routine |
-|---|---|
-| Monday | Review previous week metrics. Set 3 priorities for the week. |
-| Wednesday | Ship at least one improvement to production. |
-| Friday | Brief ship-in-public post (what shipped, what you learned). Update this sprint doc. |
+Exit check: Simulated timeout → run reaches `failed` state → GitHub Check updated → no orphaned runner jobs.
 
-**One rule:** Every week must ship something to production. No week-long planning without a deploy.
+---
+
+### Sprint 3.3 — Observability `[PARALLEL with 3.1 and 3.2]`
+
+Tasks:
+- `packages/observability`: OpenTelemetry setup, Pino logger factory.
+- Correlation ID propagated through every Service Bus message and job: `runId`, `installationId`, `repoId`, `sha` on every log line.
+- OTEL spans wired across: webhook-api, orchestrator, browser-runner, reporter.
+- App Insights: export OTEL spans, custom metrics (run duration, resolution latency, false failure rate).
+- Build two App Insights dashboards: operational (active runs, queue depth, error rate) + product health (runs/day, mode breakdown, false failure rate).
+- 8 alert rules configured (signature failure spike, resolution failure spike, runner crash loop, artifact upload failure, Key Vault access failure, queue depth > 50, high timeout rate, unusual rerun volume).
+
+Exit check: End-to-end run produces correlated OTEL trace visible in App Insights. All 8 alerts trigger correctly in dev environment when conditions are simulated.
+
+---
+
+### Sprint 3.4 — Cost Controls + Retention
+
+Tasks:
+- Per-installation concurrency cap (default 5, configurable).
+- Rate limit on rerun commands: max 5 reruns per PR per hour.
+- Video capture: failure or explicit debug mode only.
+- Max test cases per PR (default 20, configurable).
+- Azure Blob lifecycle rules: screenshots 30d, traces 14d, videos 14d, logs 30d.
+- DB retention: run metadata 90d, audit events 90d+.
+
+Exit check: Concurrency cap enforced under load test (6th run for same installation is queued, not started). Lifecycle rules verified in Azure portal.
+
+---
+
+### Sprint 3.5 — External Partner Onboarding + M3 `[HUMAN]`
+
+Tasks:
+- Onboard 3 external design partner repos. Walk each through PR template + first run.
+- Write 5 operational runbooks: preview not found, runner crash, GitHub auth failure, Vercel token failure, queue stuck.
+- Monitor false failure rate, preview resolution rate, run duration across 3 external repos.
+
+Exit check **(M3)**: 3+ external repos active. False failure rate < 5%. Alerting live. 5 runbooks written. Marketplace listing published (free tier).
+
+---
+
+## Phase 4 — Repo-Aware Intelligence
+
+All sprints in this phase can run in parallel with each other.
+
+### Sprint 4.1 — Changed-File Heuristics
+
+Tasks:
+- Parse PR diff to extract changed file paths.
+- Map file paths to affected Next.js routes (`pages/`, `app/`), components (`components/`), API endpoints (`api/`).
+- Append heuristic-based additional smoke checks to the plan for changed routes.
+
+Exit check: PR touching `app/dashboard/page.tsx` → plan includes a smoke check for `/dashboard`.
+
+---
+
+### Sprint 4.2 — AI Plan Suggestions
+
+Tasks:
+- Planner prompt: given changed files + existing YAML plan → suggest missing coverage.
+- Post suggestions as informational PR comment (not blocking).
+- Golden fixture: 5 PRs with diffs + plans → expected suggestions.
+
+Exit check: Suggestions appear on real PR. False suggestion rate < 10% on golden fixtures.
+
+---
+
+### Sprint 4.3 — `pgvector` Retrieval
+
+Tasks:
+- Enable `pgvector` extension on existing PostgreSQL instance.
+- Embed past run summaries using Azure OpenAI embeddings.
+- On new run: retrieve 3 most similar past runs for failure summarizer context.
+- Store embeddings in `model_trace` or a dedicated embeddings table.
+
+Exit check: Failure summary for a known route references a similar past failure correctly. Retrieval latency < 2s.
+
+---
+
+### Sprint 4.4 — Prompt Regression Suite
+
+Tasks:
+- Golden fixture library: 20+ (input, expected output) pairs for planner, summarizer, classifier.
+- Run fixtures in CI on every prompt or model config change.
+- Fail CI if any fixture degrades.
+
+Exit check: Fixture suite runs in CI. One intentionally broken prompt causes CI failure.
+
+---
+
+## Phase 5 — Launch Readiness
+
+### Sprint 5.1 — Multi-Tenancy + Rate Limiting `[PARALLEL with 5.2]`
+
+Tasks:
+- Per-installation data isolation: all DB queries scoped by `installation_id`.
+- Per-installation run concurrency cap, runs-per-hour cap.
+- Noisy installation cannot exceed its quota or starve other tenants.
+- Billing tier enforcement in run creation: check tier limits, block + post upgrade CTA if exceeded.
+
+Exit check: Two installations running simultaneously are isolated. Quota-exceeded run triggers upgrade CTA comment in PR.
+
+---
+
+### Sprint 5.2 — Stripe Billing `[PARALLEL with 5.1]`
+
+Tasks:
+- Stripe Billing: subscription plans for Free, Starter, Growth, Team tiers.
+- Metered billing for overage runs.
+- Stripe webhook: update `installation.tier` on subscription events.
+- Monthly run counter reset on billing cycle.
+- Failed payment → 7-day grace → downgrade to Free.
+- Self-serve cancellation in dashboard (downgrade at period end).
+
+Exit check: Test Stripe webhook updates installation tier in DB. Overage triggers correct per-run charge. Cancellation downgrades at period end.
+
+---
+
+### Sprint 5.3 — Onboarding Flow `[PARALLEL with 5.1, 5.2]`
+
+Tasks:
+- GitHub App install → auto-trigger first run on most recent open PR.
+- Onboarding checklist posted as PR comment: PR template detected? `data-testid` selectors found? Sandbox accounts configured?
+- Per-repo config wizard: guide through `.previewqa/config.yaml` creation.
+
+Exit check: Fresh install on a test repo → onboarding comment posted → first run triggered automatically.
+
+---
+
+### Sprint 5.4 — Dashboard `apps/dashboard`
+
+Tasks:
+- Installation management view.
+- Per-repo run history list with status badges.
+- Run detail: step outcomes, artifact browser, model trace metadata.
+- Repo config editor.
+- Usage stats: runs used vs. plan limit, active repos vs. limit.
+
+Exit check: Dashboard loads for a real installation. Run history shows correct data. Artifact links open screenshots.
+
+---
+
+### Sprint 5.5 — Security Review + Runbooks `[HUMAN]`
+
+Tasks:
+- Secrets audit: no credentials in logs, artifacts, or PR comments.
+- Fork policy independent test: attempt authenticated fork run and verify it is blocked.
+- Dependency vulnerability scan (`pnpm audit`). Fix all critical/high CVEs.
+- GitHub App permission audit: remove any permissions beyond minimum.
+- Write remaining 5 runbooks (total 10): bad prompt rollout, false failure spike, fork policy bypass attempt, high timeout rate, noisy repo.
+
+Exit check: All security findings resolved. 10 runbooks complete. `pnpm audit` shows zero critical/high vulnerabilities.
+
+---
+
+### Sprint 5.6 — Launch `[HUMAN]`
+
+Tasks:
+- Run M4 launch bar checklist: all items must be true.
+- Enable paid tiers in Stripe. Deploy pricing page.
+- Send launch email to waitlist.
+- Social push: Twitter/X, LinkedIn, Indie Hackers, Vercel Discord, relevant Slack communities.
+- Monitor: conversions, installs, run volume, errors. Respond to all support requests same day.
+
+Exit check **(M4)**: Paid tiers live. First paying customer. ≥ 50 internal PR runs logged. All launch bar items checked.
+
+---
+
+## GTM Sprints (run in parallel with engineering Phase 2 onward)
+
+These sprints have no code dependencies. They can be executed as separate agent tasks or manual actions independently of the engineering track.
+
+### GTM Sprint G1 — Ship-in-Public Presence
+
+Tasks:
+- Write first Twitter/X ship-in-public thread: "What we're building and why."
+- Set up waitlist landing page (Carrd, Framer, or Notion — email capture only).
+- GitHub App listed on GitHub Marketplace (free tier, basic copy).
+
+---
+
+### GTM Sprint G2 — Design Partner Outreach
+
+Tasks:
+- Identify 20 Vercel-heavy startup eng leads (GitHub + Twitter search, personal network).
+- Send 20 personalised outreach messages: free 60-day access in exchange for weekly 30-min feedback calls.
+- Target: 5 confirmed design partners before M3.
+
+---
+
+### GTM Sprint G3 — Content Foundation
+
+Tasks:
+- Write and publish: "Why your Vercel preview deployment is a lie" (anchor SEO post).
+- Write and publish: "How we added automated QA to every PR in one session."
+- Record 60-second demo video: PR opens → bot runs → fails → developer fixes → bot reruns → passes.
+- Cross-post all content to Dev.to and Hashnode.
+
+---
+
+### GTM Sprint G4 — Product Hunt Launch `[after M2]`
+
+Tasks:
+- Write Product Hunt listing: tagline, description, screenshots (3), first comment (founder story).
+- Line up 10–20 supporters for launch day upvotes.
+- Post at 12:01 AM PST on a Tuesday or Wednesday.
+- Respond to every comment within 4 hours on launch day.
+- Target: top 5 in Developer Tools, 200+ upvotes, 50+ installs on day 1.
+
+---
+
+### GTM Sprint G5 — Partnership Outreach `[after M3]`
+
+Tasks:
+- Email Vercel ecosystem team: pitch Vercel Marketplace listing + co-authored blog post.
+- Reach out to Linear partnerships team: pitch native QA run → Linear issue integration.
+- Identify 3 dev agencies for partner program conversation.
+
+---
+
+## Post-Launch Recurring Sprints
+
+Run these on a repeating cadence after M4.
+
+| Sprint | Cadence | Work |
+|---|---|---|
+| Metrics review | Weekly | MRR, installs, churn, false failure rate vs. targets |
+| User interview | Monthly | 3 active users + 1 churned user — 30 min each |
+| Newsletter sponsorship | Once (Month 4 post-launch) | Bytes.dev or TLDR Tech — measure installs per $spent |
+| Vercel partnership follow-up | Monthly until closed | Move Vercel Marketplace listing forward |
+| Linear integration | After $5K MRR | Build QA run → Linear issue link |
+| First Enterprise deal | On first inbound inquiry | Close with MSA template |
+
+---
+
+## Operating principle for agent-driven execution
+
+- One sprint = one agent session or cluster of parallel agent sessions.
+- Always run the exit check before marking a sprint done.
+- Sprints marked `[PARALLEL]` can be delegated to separate agents simultaneously.
+- Sprints marked `[HUMAN]` require a real human action — no agent can substitute.
+- When a sprint's exit check fails, the agent reruns that sprint, not the next one.
+- No sprint is skipped. Phase gates are non-negotiable.

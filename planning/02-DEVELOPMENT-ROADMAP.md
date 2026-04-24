@@ -7,20 +7,24 @@ Phases are gates — complete each before starting the next.
 
 ---
 
-## Timeline overview
+## Phase sequence
 
-| Phase | Name | Duration | Outcome |
+Phases are gates — complete each phase's exit criteria before starting the next.
+With coding agents, phases are measured in **sprints** (completed task batches), not calendar time.
+See [08-EXECUTION-PLAN.md](08-EXECUTION-PLAN.md) for the full sprint breakdown.
+
+| Phase | Name | Sprints | Outcome |
 |---|---|---|---|
-| Phase 0 | Foundation | Weeks 1–2 | Infra + monorepo + GitHub App ready |
-| Phase 1 | Alpha — Core Loop | Weeks 3–6 | PR → preview → Playwright → GitHub result |
-| Phase 2 | Beta — Instruction-Driven | Weeks 7–10 | YAML instructions drive test plan |
-| Phase 3 | Hardening | Weeks 11–14 | Safe for multi-repo internal use |
-| Phase 4 | Repo-Aware Intelligence | Weeks 15–18 | Diff-aware plan quality improvements |
-| Phase 5 | Launch Readiness | Weeks 19–24+ | Multi-tenant, paid tiers live |
+| Phase 0 | Foundation | 0.1 → 0.4 | Infra + monorepo + GitHub App ready |
+| Phase 1 | Alpha — Core Loop | 1.1 → 1.5 | PR → preview → Playwright → GitHub result |
+| Phase 2 | Beta — Instruction-Driven | 2.1 → 2.4 | YAML instructions drive test plan |
+| Phase 3 | Hardening | 3.1 → 3.5 | Safe for multi-repo internal use |
+| Phase 4 | Repo-Aware Intelligence | 4.1 → 4.4 | Diff-aware plan quality improvements |
+| Phase 5 | Launch Readiness | 5.1 → 5.6 | Multi-tenant, paid tiers live |
 
 ---
 
-## Phase 0 — Foundation (Weeks 1–2)
+## Phase 0 — Foundation
 
 ### Objective
 Create everything needed before a single line of product code runs.
@@ -69,7 +73,7 @@ Create everything needed before a single line of product code runs.
 
 ---
 
-## Phase 1 — Alpha: Core Loop (Weeks 3–6)
+## Phase 1 — Alpha: Core Loop
 
 ### Objective
 Prove the end-to-end loop: PR open → preview URL resolved → Playwright smoke → GitHub result visible.
@@ -154,7 +158,7 @@ Default smoke plan:
 
 ---
 
-## Phase 2 — Beta: Instruction-Driven (Weeks 7–10)
+## Phase 2 — Beta: Instruction-Driven
 
 ### Objective
 Structured YAML test instructions embedded in the PR drive the test plan instead of a default smoke.
@@ -230,7 +234,7 @@ steps:
 
 ---
 
-## Phase 3 — Hardening (Weeks 11–14)
+## Phase 3 — Hardening
 
 ### Objective
 Make the system safe and stable enough for broader internal use across multiple repos.
@@ -294,7 +298,7 @@ Make the system safe and stable enough for broader internal use across multiple 
 
 ---
 
-## Phase 4 — Repo-Aware Intelligence (Weeks 15–18)
+## Phase 4 — Repo-Aware Intelligence
 
 ### Objective
 Improve plan quality and risk awareness using repository diff context and run history.
@@ -342,7 +346,7 @@ Improve plan quality and risk awareness using repository diff context and run hi
 
 ---
 
-## Phase 5 — Launch Readiness (Weeks 19–24+)
+## Phase 5 — Launch Readiness
 
 ### Objective
 Prepare for real external, multi-tenant usage with paying customers.
