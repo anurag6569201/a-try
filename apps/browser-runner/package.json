@@ -1,0 +1,15 @@
+{
+  "name": "@preview-qa/browser-runner",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"no tests yet\""
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "*"
+  }
+}
