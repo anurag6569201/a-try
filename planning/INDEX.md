@@ -17,6 +17,7 @@
 | [06-METRICS-AND-ANALYTICS.md](06-METRICS-AND-ANALYTICS.md) | Product KPIs, business metrics, operational SLOs, analytics instrumentation |
 | [07-RISKS.md](07-RISKS.md) | Full risk register — technical, business, security, operational |
 | [08-90-DAY-SPRINT.md](08-90-DAY-SPRINT.md) | Sprint-by-sprint execution plan — ordered task batches with exit checks, parallel agent markers, and GTM sprints |
+| [09-PROMPT-PLAYBOOK.md](09-PROMPT-PLAYBOOK.md) | **Start here when building.** One complete, copy-paste prompt per sprint. Milestone tracker, exit checks, parallel markers, and "what to run next" table. |
 
 ---
 
@@ -36,8 +37,9 @@
 
 ## The single most important next action
 
-Register the GitHub App and provision Azure baseline infrastructure this week.
-Everything in Phase 1 is blocked until that is done.
+Open [09-PROMPT-PLAYBOOK.md](09-PROMPT-PLAYBOOK.md).
+Find the last sprint you completed in the milestone tracker. Run the next prompt.
+The "Quick reference" table at the bottom tells you exactly what to run next.
 
 ---
 
