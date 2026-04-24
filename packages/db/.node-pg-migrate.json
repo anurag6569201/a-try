@@ -1,0 +1,6 @@
+{
+  "migrationsTable": "pgmigrations",
+  "dir": "migrations",
+  "direction": "up",
+  "decamelize": true
+}
