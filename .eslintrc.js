@@ -17,4 +17,12 @@ module.exports = {
     "@typescript-eslint/no-explicit-any": "error",
   },
   ignorePatterns: ["dist/", "node_modules/", "*.js", "*.cjs"],
+  overrides: [
+    {
+      files: ["**/__tests__/**/*.ts", "**/*.test.ts"],
+      rules: {
+        "@typescript-eslint/unbound-method": "off",
+      },
+    },
+  ],
 };
