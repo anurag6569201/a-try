@@ -82,6 +82,13 @@ export async function handlePullRequestEvent(
 
       // Billing quota: check monthly run limit against installation tier
       const installation = await getInstallationById(pool, installationId);
+
+      // Suspended installations are dropped silently
+      if (installation?.suspended_at != null) {
+        log.warn({ installationId }, 'dropping event — installation is suspended');
+        return;
+      }
+
       const tier = installation?.tier ?? BillingTier.Free;
       const tierLimits = TIER_LIMITS[tier] ?? TIER_LIMITS[BillingTier.Free];
       // Grace period: installation had a payment failure but is still within the 7-day window

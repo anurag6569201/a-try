@@ -21,5 +21,10 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "pnpm": {
+    "overrides": {
+      "glob": ">=11.1.0"
+    }
   }
 }
