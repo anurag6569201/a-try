@@ -1,5 +1,27 @@
 import { RunState, RunMode, FailureCategory, ParseOutcome, ArtifactKind, BillingTier } from '@preview-qa/domain';
 
+export interface Repository {
+  id: string;
+  installation_id: string;
+  github_id: number;
+  full_name: string;
+  default_branch: string;
+  config: Record<string, unknown>;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface ModelTrace {
+  id: string;
+  run_id: string;
+  prompt_name: string;
+  model: string;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  latency_ms: number | null;
+  created_at: Date;
+}
+
 export interface Installation {
   id: string;
   github_id: number;
