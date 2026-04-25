@@ -53,3 +53,17 @@ export async function chatComplete(
 
   return { content, inputTokens, outputTokens };
 }
+
+export async function embedText(
+  client: AzureOpenAI,
+  deployment: string,
+  text: string,
+): Promise<number[]> {
+  const response = await client.embeddings.create({
+    model: deployment,
+    input: text,
+  });
+  const embedding = response.data[0]?.embedding;
+  if (!embedding) throw new Error('embedText: no embedding returned');
+  return embedding;
+}

@@ -8,6 +8,7 @@ export interface AzureOpenAIConfig {
     failureSummarizer: string;
     riskClassifier: string;
     planSuggester: string;
+    embeddings: string;
   };
 }
 

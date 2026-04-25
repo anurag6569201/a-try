@@ -9,7 +9,7 @@ import { BlobServiceClient } from '@azure/storage-blob';
 import { formatPRComment, formatCheckBody } from '@preview-qa/reporter';
 import type { ReportArtifact } from '@preview-qa/reporter';
 import { parsePRBody, formatParseErrors, extractYamlBlock } from '@preview-qa/parser';
-import { buildPlan, suggestMissingCoverage, formatSuggestionComment } from '@preview-qa/planner';
+import { buildPlan, suggestMissingCoverage, formatSuggestionComment, storeRunSummary, retrieveSimilarRuns, formatSimilarRunsContext } from '@preview-qa/planner';
 import { createLogger, getTracer, withSpan } from '@preview-qa/observability';
 import { createAzureOpenAIClient } from '@preview-qa/ai';
 import { transition } from '../statemachine.js';
@@ -275,6 +275,20 @@ export async function handlePullRequestEvent(
         'runner finished',
       );
 
+      // Store run embedding for future retrieval (best-effort, non-blocking)
+      if (config.ai && runnerResult.outcome === 'fail') {
+        const failedStep = runnerResult.steps.find((s) => !s.ok);
+        const summaryText = failedStep?.error
+          ? `${failedStep.type} failed: ${failedStep.error}`
+          : `run failed after ${runnerResult.durationMs}ms`;
+        void storeRunSummary(createAzureOpenAIClient(config.ai), pool, {
+          runId: run.id,
+          summaryText,
+          deployment: config.ai.deployments.embeddings,
+          model: config.ai.deployments.embeddings,
+        }).catch((err: unknown) => runLog.warn({ err }, 'failed to store run embedding — skipped'));
+      }
+
       // Upload artifacts
       const artifacts = await uploadRunArtifacts(config, run.id, runnerResult);
 
@@ -297,6 +311,29 @@ export async function handlePullRequestEvent(
       if (!reportingResult.success) return;
       await reportStateChange(reporterCtx, checkRunId, RunState.Reporting);
 
+      // Retrieve similar past failures for context (best-effort)
+      let similarRunsContext = '';
+      if (config.ai && runnerResult.outcome === 'fail') {
+        try {
+          const failedStep = runnerResult.steps.find((s) => !s.ok);
+          const queryText = failedStep?.error
+            ? `${failedStep.type} failed: ${failedStep.error}`
+            : `run failed after ${runnerResult.durationMs}ms`;
+          const similarRuns = await retrieveSimilarRuns(createAzureOpenAIClient(config.ai), pool, {
+            summaryText: queryText,
+            deployment: config.ai.deployments.embeddings,
+            excludeRunId: run.id,
+            limit: 3,
+          });
+          similarRunsContext = formatSimilarRunsContext(similarRuns);
+          if (similarRunsContext) {
+            runLog.info({ similarRunCount: similarRuns.length }, 'retrieved similar past runs');
+          }
+        } catch (err) {
+          runLog.warn({ err }, 'failed to retrieve similar runs — skipped');
+        }
+      }
+
       const report = {
         runId: run.id,
         outcome: runnerResult.outcome,
@@ -307,6 +344,7 @@ export async function handlePullRequestEvent(
         artifacts,
         ...(runnerResult.failureCategory !== undefined ? { failureCategory: runnerResult.failureCategory } : {}),
         ...(runnerResult.timedOut ? { timedOut: true } : {}),
+        ...(similarRunsContext ? { similarRunsContext } : {}),
       };
 
       try {

@@ -5,3 +5,4 @@ export * from './planner.js';
 export * from './sanitize.js';
 export * from './heuristics.js';
 export * from './suggester.js';
+export * from './retrieval.js';

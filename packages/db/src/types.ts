@@ -88,6 +88,28 @@ export interface CreateAuditEventInput {
   payload?: Record<string, unknown>;
 }
 
+export interface RunEmbedding {
+  id: string;
+  run_id: string;
+  summary_text: string;
+  embedding: number[];
+  model: string;
+  created_at: Date;
+}
+
+export interface UpsertRunEmbeddingInput {
+  run_id: string;
+  summary_text: string;
+  embedding: number[];
+  model: string;
+}
+
+export interface SimilarRun {
+  run_id: string;
+  summary_text: string;
+  distance: number;
+}
+
 export interface Artifact {
   id: string;
   run_id: string;

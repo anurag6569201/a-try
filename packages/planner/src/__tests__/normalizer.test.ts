@@ -18,7 +18,7 @@ const fakePool = {} as Parameters<typeof normalizeSteps>[0];
 const fakeAiConfig = {
   endpoint: 'https://example.openai.azure.com',
   apiKey: 'key',
-  deployments: { planNormalizer: 'gpt-4o', failureSummarizer: 'gpt-4o', riskClassifier: 'gpt-4o', planSuggester: 'plan-suggester' },
+  deployments: { planNormalizer: 'gpt-4o', failureSummarizer: 'gpt-4o', riskClassifier: 'gpt-4o', planSuggester: 'plan-suggester', embeddings: 'text-embedding-3-small' },
 };
 const runId = 'run-1';
 const previewUrl = 'https://preview.example.com';
