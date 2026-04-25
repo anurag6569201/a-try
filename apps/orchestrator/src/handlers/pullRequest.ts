@@ -199,6 +199,8 @@ export async function handlePullRequestEvent(
     sha,
     steps: runnerResult.steps,
     artifacts,
+    ...(runnerResult.failureCategory !== undefined ? { failureCategory: runnerResult.failureCategory } : {}),
+    ...(runnerResult.timedOut ? { timedOut: true } : {}),
   };
 
   try {

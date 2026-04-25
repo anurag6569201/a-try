@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StepType } from '@preview-qa/domain';
 
 const mocks = vi.hoisted(() => {
@@ -72,6 +72,7 @@ vi.mock('fs', () => ({
 import { executeRun } from '../executor.js';
 
 beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.clearAllMocks();
   mocks.mockGoto.mockResolvedValue(null);
   mocks.mockTitle.mockResolvedValue('Test Page');
@@ -91,6 +92,10 @@ beforeEach(() => {
     fill: mocks.mockLocatorFill,
     click: mocks.mockLocatorClick,
   });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('executeRun', () => {
@@ -205,5 +210,67 @@ describe('executeRun', () => {
     expect(result.outcome).toBe('fail');
     expect(result.tracePath).toContain('trace.zip');
     expect(mocks.mockTracingStop).toHaveBeenCalledWith({ path: expect.stringContaining('trace.zip') as string });
+  });
+
+  it('retries transient network errors up to 3 attempts', async () => {
+    mocks.mockGoto
+      .mockRejectedValueOnce(new Error('net::ERR_CONNECTION_REFUSED'))
+      .mockRejectedValueOnce(new Error('net::ERR_CONNECTION_REFUSED'))
+      .mockResolvedValueOnce(null);
+
+    const result = await executeRun({
+      previewUrl: 'https://preview.example.com',
+      outputDir: '/tmp/test-run',
+      steps: [{ type: StepType.Navigate, url: 'https://preview.example.com' }],
+    });
+
+    expect(result.outcome).toBe('pass');
+    expect(mocks.mockGoto).toHaveBeenCalledTimes(3);
+    expect(result.steps[0]?.attempts).toBe(3);
+  });
+
+  it('does not retry non-transient errors', async () => {
+    mocks.mockTitle.mockResolvedValue('Wrong');
+
+    const result = await executeRun({
+      previewUrl: 'https://preview.example.com',
+      outputDir: '/tmp/test-run',
+      steps: [
+        { type: StepType.Navigate, url: 'https://preview.example.com' },
+        { type: StepType.AssertTitle, value: 'Expected' },
+      ],
+    });
+
+    expect(result.outcome).toBe('fail');
+    expect(result.steps[1]?.attempts).toBeUndefined();
+  });
+
+  it('classifies assertion failures as product_bug', async () => {
+    mocks.mockTitle.mockResolvedValue('Wrong Title');
+
+    const result = await executeRun({
+      previewUrl: 'https://preview.example.com',
+      outputDir: '/tmp/test-run',
+      steps: [
+        { type: StepType.Navigate, url: 'https://preview.example.com' },
+        { type: StepType.AssertTitle, value: 'Expected' },
+      ],
+    });
+
+    expect(result.outcome).toBe('fail');
+    expect(result.failureCategory).toBe('product_bug');
+  });
+
+  it('classifies repeated transient failures as flaky', async () => {
+    mocks.mockGoto.mockRejectedValue(new Error('net::ERR_CONNECTION_REFUSED'));
+
+    const result = await executeRun({
+      previewUrl: 'https://preview.example.com',
+      outputDir: '/tmp/test-run',
+      steps: [{ type: StepType.Navigate, url: 'https://preview.example.com' }],
+    });
+
+    expect(result.outcome).toBe('fail');
+    expect(result.failureCategory).toBe('flaky');
   });
 });

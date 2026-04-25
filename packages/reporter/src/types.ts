@@ -1,5 +1,5 @@
 import type { StepResult } from '@preview-qa/runner-playwright';
-import type { ArtifactKind } from '@preview-qa/domain';
+import type { ArtifactKind, FailureCategory } from '@preview-qa/domain';
 
 export interface ReportArtifact {
   kind: ArtifactKind;
@@ -15,4 +15,6 @@ export interface RunReport {
   sha: string;
   steps: StepResult[];
   artifacts: ReportArtifact[];
+  failureCategory?: FailureCategory;
+  timedOut?: boolean;
 }
