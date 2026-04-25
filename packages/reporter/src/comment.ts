@@ -1,5 +1,6 @@
 import { ArtifactKind } from '@preview-qa/domain';
 import type { RunReport } from './types.js';
+import { redactSecrets } from './redact.js';
 
 const PASS_BADGE = '![pass](https://img.shields.io/badge/preview--qa-pass-brightgreen)';
 const FAIL_BADGE = '![fail](https://img.shields.io/badge/preview--qa-fail-red)';
@@ -72,13 +73,15 @@ export function formatPRComment(report: RunReport): string {
     ? `\n${artifactLinks(report)}\n`
     : '';
 
-  return [
+  const body = [
     `${badge(report.outcome)} **Preview QA** — ${report.outcome.toUpperCase()} in ${durationLabel(report.durationMs)}`,
     '',
     previewLink + stepTable(report),
     artifactSection,
     `<sub>Run \`${report.runId.slice(0, 8)}\` · SHA \`${report.sha.slice(0, 7)}\`</sub>`,
   ].join('\n');
+
+  return redactSecrets(body);
 }
 
 export function formatCheckBody(report: RunReport): string {

@@ -1,5 +1,5 @@
 import { RunState, RunMode, EventType, ArtifactKind, ParseOutcome } from '@preview-qa/domain';
-import { createRun, cancelSupersededRuns } from '@preview-qa/db';
+import { createRun, cancelSupersededRuns, createAuditEvent } from '@preview-qa/db';
 import type { Pool } from 'pg';
 import type { PullRequestEventEnvelope } from '@preview-qa/schemas';
 import { upsertStickyComment, getInstallationOctokit } from '@preview-qa/github-adapter';
@@ -39,7 +39,28 @@ export async function handlePullRequestEvent(
     prBody?: string | null;
   };
 
-  const { pullRequestId, sha, owner, repo, vercelProjectId, mode, githubNumber, prBody } = extended;
+  const { pullRequestId, sha, owner, repo, vercelProjectId, mode, githubNumber, prBody, isFork, authorLogin } = extended;
+
+  // Fork policy: downgrade to smoke-only, log audit event, and continue
+  const effectiveMode = isFork ? RunMode.Smoke : (mode ?? RunMode.Smoke);
+  if (isFork) {
+    console.log(`[fork-policy] Fork PR #${githubNumber} by ${authorLogin ?? 'unknown'} — downgrading to smoke-only`);
+    try {
+      await createAuditEvent(pool, {
+        installation_id: installationId,
+        event_type: 'fork_policy.downgrade',
+        actor: authorLogin ?? undefined,
+        payload: {
+          githubNumber,
+          sha,
+          repositoryId,
+          reason: 'fork PR — authenticated run blocked, downgraded to smoke-only',
+        },
+      });
+    } catch (err) {
+      console.error('Failed to write fork policy audit event:', err);
+    }
+  }
 
   await cancelSupersededRuns(pool, pullRequestId, sha);
 
@@ -48,7 +69,7 @@ export async function handlePullRequestEvent(
     repository_id: repositoryId,
     installation_id: installationId,
     sha,
-    mode: mode ?? RunMode.Smoke,
+    mode: effectiveMode,
     triggered_by: 'push',
   });
 
@@ -136,11 +157,13 @@ export async function handlePullRequestEvent(
   const parsedSteps = parseResult.outcome === ParseOutcome.Found ? parseResult.block.steps : null;
   const extracted = extractYamlBlock(prBody ?? null);
   const rawYaml = extracted.found ? extracted.yaml : null;
+  // Fork PRs always use smoke steps regardless of parsed instructions
+  const planParsedSteps = isFork ? null : (parsedSteps as never);
   const { testCases } = await buildPlan(pool, {
     runId: run.id,
-    mode: mode ?? RunMode.Smoke,
+    mode: effectiveMode,
     previewUrl: resolvedPreviewUrl ?? '',
-    parsedSteps: parsedSteps as never,
+    parsedSteps: planParsedSteps,
     rawYaml,
   });
   const steps = (testCases[0]?.steps ?? []) as Step[];
