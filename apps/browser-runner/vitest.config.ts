@@ -6,6 +6,7 @@ export default defineConfig({
     alias: {
       '@preview-qa/domain': path.resolve(__dirname, '../../packages/domain/src/index.ts'),
       '@preview-qa/runner-playwright': path.resolve(__dirname, '../../packages/runner-playwright/src/index.ts'),
+      '@preview-qa/observability': path.resolve(__dirname, '../../packages/observability/src/index.ts'),
     },
   },
   test: {

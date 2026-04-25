@@ -1,3 +1,4 @@
+import { initTelemetry, shutdownTelemetry } from '@preview-qa/observability';
 import { OrchestratorConsumer } from './consumer.js';
 import type { OrchestratorConfig } from './types.js';
 
@@ -33,16 +34,27 @@ function buildConfig(): OrchestratorConfig {
 }
 
 function main(): void {
+  initTelemetry({
+    serviceName: 'orchestrator',
+    ...(process.env['APPLICATIONINSIGHTS_CONNECTION_STRING'] !== undefined
+      ? { appInsightsConnectionString: process.env['APPLICATIONINSIGHTS_CONNECTION_STRING'] }
+      : {}),
+  });
+
   const config = buildConfig();
   const consumer = new OrchestratorConsumer(config);
   consumer.start();
 
   const shutdown = (): void => {
     console.log('Shutting down...');
-    consumer.stop().then(() => process.exit(0)).catch((err: unknown) => {
-      console.error('Error during shutdown:', err);
-      process.exit(1);
-    });
+    consumer
+      .stop()
+      .then(() => shutdownTelemetry())
+      .then(() => process.exit(0))
+      .catch((err: unknown) => {
+        console.error('Error during shutdown:', err);
+        process.exit(1);
+      });
   };
 
   process.on('SIGTERM', shutdown);
