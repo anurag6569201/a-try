@@ -6,10 +6,18 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"no tests yet\""
+    "test": "vitest run --config vitest.config.ts",
+    "start": "node dist/apps/browser-runner/src/index.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@azure/storage-blob": "^12.24.0",
+    "@preview-qa/domain": "workspace:*",
+    "@preview-qa/runner-playwright": "workspace:*",
+    "playwright": "^1.48.0"
+  },
   "devDependencies": {
-    "typescript": "*"
+    "@types/node": "^20.0.0",
+    "typescript": "*",
+    "vitest": "^2.0.0"
   }
 }
