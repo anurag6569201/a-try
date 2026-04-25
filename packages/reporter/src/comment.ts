@@ -1,5 +1,6 @@
 import { ArtifactKind, FailureCategory } from '@preview-qa/domain';
 import type { RunReport } from './types.js';
+import { redactSecrets } from './redact.js';
 
 const PASS_BADGE = '![pass](https://img.shields.io/badge/preview--qa-pass-brightgreen)';
 const FAIL_BADGE = '![fail](https://img.shields.io/badge/preview--qa-fail-red)';

@@ -70,6 +70,24 @@ export interface Result {
   created_at: Date;
 }
 
+export interface AuditEvent {
+  id: string;
+  installation_id: string | null;
+  run_id: string | null;
+  event_type: string;
+  actor: string | null;
+  payload: Record<string, unknown>;
+  created_at: Date;
+}
+
+export interface CreateAuditEventInput {
+  installation_id?: string;
+  run_id?: string;
+  event_type: string;
+  actor?: string;
+  payload?: Record<string, unknown>;
+}
+
 export interface Artifact {
   id: string;
   run_id: string;
