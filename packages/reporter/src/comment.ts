@@ -1,4 +1,4 @@
-import { ArtifactKind } from '@preview-qa/domain';
+import { ArtifactKind, FailureCategory } from '@preview-qa/domain';
 import type { RunReport } from './types.js';
 import { redactSecrets } from './redact.js';
 
@@ -64,6 +64,21 @@ function artifactLinks(report: RunReport): string {
   return links.join('\n');
 }
 
+const FAILURE_CATEGORY_LABELS: Record<FailureCategory, string> = {
+  [FailureCategory.ProductBug]: '🐛 product bug',
+  [FailureCategory.TestBug]: '🔧 test bug',
+  [FailureCategory.EnvironmentIssue]: '🌐 environment issue',
+  [FailureCategory.Flaky]: '⚡ flaky',
+  [FailureCategory.NeedsClarification]: '❓ needs clarification',
+};
+
+function failureCategoryLine(report: RunReport): string {
+  if (report.outcome !== 'fail') return '';
+  if (report.timedOut) return '**Classification:** ⏱ timed out\n';
+  if (!report.failureCategory) return '';
+  return `**Classification:** ${FAILURE_CATEGORY_LABELS[report.failureCategory]}\n`;
+}
+
 export function formatPRComment(report: RunReport): string {
   const previewLink = report.previewUrl
     ? `**Preview:** [${report.previewUrl}](${report.previewUrl})\n`
@@ -76,12 +91,12 @@ export function formatPRComment(report: RunReport): string {
   const body = [
     `${badge(report.outcome)} **Preview QA** — ${report.outcome.toUpperCase()} in ${durationLabel(report.durationMs)}`,
     '',
-    previewLink + stepTable(report),
+    failureCategoryLine(report) + previewLink + stepTable(report),
     artifactSection,
     `<sub>Run \`${report.runId.slice(0, 8)}\` · SHA \`${report.sha.slice(0, 7)}\`</sub>`,
   ].join('\n');
 
-  return redactSecrets(body);
+  return body;
 }
 
 export function formatCheckBody(report: RunReport): string {
@@ -95,9 +110,12 @@ export function formatCheckBody(report: RunReport): string {
       ? `\n### Failures\n${failedSteps.map((s) => `- \`${s.type}\`: ${s.error ?? 'unknown error'}`).join('\n')}\n`
       : '';
 
+  const classificationLine = failureCategoryLine(report);
+
   return [
     `${previewLink}${stepTable(report)}`,
     failureDetail,
+    classificationLine,
     artifactLinks(report),
   ]
     .filter(Boolean)

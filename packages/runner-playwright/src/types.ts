@@ -1,4 +1,4 @@
-import { StepType } from '@preview-qa/domain';
+import { StepType, FailureCategory } from '@preview-qa/domain';
 
 export interface Step {
   type: StepType;
@@ -14,6 +14,7 @@ export interface StepResult {
   durationMs: number;
   error?: string;
   screenshotPath?: string;
+  attempts?: number;
 }
 
 export interface RunnerResult {
@@ -22,12 +23,15 @@ export interface RunnerResult {
   durationMs: number;
   tracePath?: string;
   errorScreenshotPath?: string;
+  failureCategory?: FailureCategory;
+  timedOut?: boolean;
 }
 
 export interface RunnerInput {
   previewUrl: string;
   steps: Step[];
   outputDir: string;
-  timeoutMs?: number;
+  stepTimeoutMs?: number;
+  hardKillMs?: number;
   storageStatePath?: string;
 }
