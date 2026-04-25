@@ -1,4 +1,4 @@
-import { RunState, RunMode, EventType, StepType, ArtifactKind } from '@preview-qa/domain';
+import { RunState, RunMode, EventType, StepType, ArtifactKind, ParseOutcome } from '@preview-qa/domain';
 import { createRun, cancelSupersededRuns } from '@preview-qa/db';
 import type { Pool } from 'pg';
 import type { PullRequestEventEnvelope } from '@preview-qa/schemas';
@@ -8,6 +8,7 @@ import type { Step } from '@preview-qa/runner-playwright';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { formatPRComment, formatCheckBody } from '@preview-qa/reporter';
 import type { ReportArtifact } from '@preview-qa/reporter';
+import { parsePRBody, formatParseErrors } from '@preview-qa/parser';
 import { transition } from '../statemachine.js';
 import { createInitialCheck, reportStateChange, reportStateChangeWithBody } from '../github-reporter.js';
 import { pollForPreview } from '../preview-poller.js';
@@ -33,9 +34,10 @@ export async function handlePullRequestEvent(
     vercelProjectId?: string;
     mode?: RunMode;
     githubNumber: number;
+    prBody?: string | null;
   };
 
-  const { pullRequestId, sha, owner, repo, vercelProjectId, mode, githubNumber } = extended;
+  const { pullRequestId, sha, owner, repo, vercelProjectId, mode, githubNumber, prBody } = extended;
 
   await cancelSupersededRuns(pool, pullRequestId, sha);
 
@@ -98,6 +100,25 @@ export async function handlePullRequestEvent(
     resolvedPreviewUrl = pollResult.url;
   }
 
+  // Parse PR body for instruction block
+  const parseResult = parsePRBody(prBody ?? null);
+
+  // On parse error: post guidance comment then fall through to smoke
+  if (parseResult.outcome === ParseOutcome.Error) {
+    console.warn(`[${run.id}] QA block parse errors:`, parseResult.errors);
+    try {
+      const octokit = await getInstallationOctokit(config.github, Number(installationId));
+      await upsertStickyComment(octokit, {
+        owner: owner ?? '',
+        repo: repo ?? '',
+        pullNumber: githubNumber,
+        body: formatParseErrors(parseResult.errors),
+      });
+    } catch (err) {
+      console.error(`[${run.id}] Failed to post parse error comment:`, err);
+    }
+  }
+
   // Advance to Planning
   const planningResult = await transition(
     pool,
@@ -114,8 +135,9 @@ export async function handlePullRequestEvent(
   if (!runningResult.success) return;
   await reportStateChange(reporterCtx, checkRunId, RunState.Running);
 
-  // Execute Playwright steps
-  const steps = buildSmokeSteps(resolvedPreviewUrl);
+  // Resolve steps: instruction block → explicit steps, otherwise smoke
+  const steps = resolveSteps(parseResult, resolvedPreviewUrl);
+
   const outputDir = path.join(os.tmpdir(), `run-${run.id}`);
   const runnerResult = await executeRun({
     previewUrl: resolvedPreviewUrl ?? '',
@@ -124,7 +146,7 @@ export async function handlePullRequestEvent(
   });
 
   // Upload artifacts
-  const artifacts = await uploadRunArtifacts(config, run.id, runnerResult, outputDir);
+  const artifacts = await uploadRunArtifacts(config, run.id, runnerResult);
 
   // Cleanup temp dir
   try {
@@ -145,7 +167,6 @@ export async function handlePullRequestEvent(
   if (!reportingResult.success) return;
   await reportStateChange(reporterCtx, checkRunId, RunState.Reporting);
 
-  // Format and post PR comment + update Check with result body
   const report = {
     runId: run.id,
     outcome: runnerResult.outcome,
@@ -177,6 +198,17 @@ export async function handlePullRequestEvent(
   await reportStateChangeWithBody(reporterCtx, checkRunId, finalState, formatCheckBody(report));
 }
 
+function resolveSteps(
+  parseResult: ReturnType<typeof parsePRBody>,
+  previewUrl: string | undefined,
+): Step[] {
+  if (parseResult.outcome === ParseOutcome.Found) {
+    return parseResult.block.steps as Step[];
+  }
+  // not_found or error → smoke
+  return buildSmokeSteps(previewUrl);
+}
+
 function buildSmokeSteps(previewUrl: string | undefined): Step[] {
   const url = previewUrl ?? '';
   return [
@@ -190,7 +222,6 @@ async function uploadRunArtifacts(
   config: OrchestratorConfig,
   runId: string,
   runnerResult: Awaited<ReturnType<typeof executeRun>>,
-  outputDir: string,
 ): Promise<ReportArtifact[]> {
   const toUpload: Array<{ localPath: string; kind: ArtifactKind }> = [];
 
@@ -211,7 +242,7 @@ async function uploadRunArtifacts(
   const blobClient = BlobServiceClient.fromConnectionString(config.storage.connectionString);
   const container = blobClient.getContainerClient(config.storage.containerName);
 
-  const results = await Promise.all(
+  return Promise.all(
     toUpload.map(async ({ localPath, kind }) => {
       const filename = path.basename(localPath);
       const blobName = `runs/${runId}/${filename}`;
@@ -224,7 +255,4 @@ async function uploadRunArtifacts(
       return { kind, blobUrl: block.url, filename } satisfies ReportArtifact;
     }),
   );
-
-  void outputDir; // used by caller for cleanup
-  return results;
 }

@@ -69,6 +69,9 @@ importers:
       '@preview-qa/github-adapter':
         specifier: workspace:*
         version: link:../../packages/github-adapter
+      '@preview-qa/parser':
+        specifier: workspace:*
+        version: link:../../packages/parser
       '@preview-qa/reporter':
         specifier: workspace:*
         version: link:../../packages/reporter
@@ -180,10 +183,26 @@ importers:
         version: 5.9.3
 
   packages/parser:
+    dependencies:
+      '@preview-qa/domain':
+        specifier: workspace:*
+        version: link:../domain
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.1
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
     devDependencies:
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       typescript:
         specifier: '*'
         version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@25.6.0)
 
   packages/planner:
     devDependencies:
@@ -735,6 +754,9 @@ packages:
 
   '@types/is-buffer@2.0.2':
     resolution: {integrity: sha512-G6OXy83Va+xEo8XgqAJYOuvOMxeey9xM5XKkvwJNmN8rVdcB+r15HvHsG86hl86JvU0y1aa7Z2ERkNFYWw9ySg==}
+
+  '@types/js-yaml@4.0.9':
+    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
 
   '@types/node@20.19.39':
     resolution: {integrity: sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw==}
@@ -2248,6 +2270,8 @@ snapshots:
   '@types/is-buffer@2.0.2':
     dependencies:
       '@types/node': 20.19.39
+
+  '@types/js-yaml@4.0.9': {}
 
   '@types/node@20.19.39':
     dependencies:
