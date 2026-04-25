@@ -86,6 +86,12 @@ export async function handleIssueCommentEvent(
 
   // Billing quota: check monthly run limit before creating a run
   const installation = await getInstallationById(pool, installationId);
+
+  if (installation?.suspended_at != null) {
+    log.warn({ installationId }, 'dropping /qa command — installation is suspended');
+    return;
+  }
+
   const tier = installation?.tier ?? BillingTier.Free;
   const tierLimits = TIER_LIMITS[tier] ?? TIER_LIMITS[BillingTier.Free];
   const inGracePeriod = installation?.grace_period_ends_at != null && installation.grace_period_ends_at > new Date();
