@@ -64,6 +64,7 @@ vi.mock('@preview-qa/runner-playwright', () => ({
 vi.mock('@preview-qa/github-adapter', () => ({
   upsertStickyComment: mocks.mockUpsertStickyComment,
   getInstallationOctokit: mocks.mockGetInstallationOctokit,
+  getPRChangedFiles: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('@azure/storage-blob', () => ({

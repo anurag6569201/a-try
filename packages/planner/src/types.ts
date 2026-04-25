@@ -9,6 +9,7 @@ export interface PlannerInput {
   rawYaml: string | null;
   useAiNormalization?: boolean;
   maxTestCases?: number;
+  changedFiles?: string[];
 }
 
 export interface ResolvedTestCase {
