@@ -1,5 +1,21 @@
 import { RunState, RunMode, FailureCategory, ParseOutcome, ArtifactKind } from '@preview-qa/domain';
 
+export interface PullRequest {
+  id: string;
+  repository_id: string;
+  github_number: number;
+  title: string;
+  author_login: string;
+  head_sha: string;
+  head_branch: string;
+  base_branch: string;
+  is_fork: boolean;
+  body: string | null;
+  state: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export interface Run {
   id: string;
   pull_request_id: string;

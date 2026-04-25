@@ -10,6 +10,8 @@
     "start": "node dist/apps/orchestrator/src/index.js"
   },
   "dependencies": {
+    "@azure/identity": "^4.5.0",
+    "@azure/keyvault-secrets": "^4.9.0",
     "@azure/service-bus": "^7.9.0",
     "@preview-qa/db": "workspace:*",
     "@preview-qa/domain": "workspace:*",

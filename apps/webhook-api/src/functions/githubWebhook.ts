@@ -3,10 +3,11 @@ import { EventType } from '@preview-qa/domain';
 import {
   PullRequestWebhookPayloadSchema,
   DeploymentStatusPayloadSchema,
+  IssueCommentPayloadSchema,
 } from '@preview-qa/schemas';
 import { verifyGitHubSignature } from '../lib/signature';
 import { enqueueEvent } from '../lib/servicebus';
-import { normalizePRPayload, normalizeDeploymentPayload } from '../lib/normalize';
+import { normalizePRPayload, normalizeDeploymentPayload, normalizeIssueCommentPayload } from '../lib/normalize';
 
 const PR_ACTIONS = new Set(['opened', 'synchronize', 'reopened']);
 
@@ -91,6 +92,43 @@ export async function githubWebhookHandler(
       });
 
       context.log(`Enqueued deployment_status sha=${normalized.sha} state=${normalized.state}`);
+      return { status: 202, body: 'Accepted' };
+    }
+
+    if (eventHeader === 'issue_comment') {
+      const action = (parsed as Record<string, unknown>)?.['action'];
+      // Only handle newly created comments
+      if (action !== 'created') return { status: 200, body: 'Event ignored' };
+
+      const result = IssueCommentPayloadSchema.safeParse(parsed);
+      if (!result.success) {
+        context.warn(`Issue comment payload parse failed: ${result.error.message}`);
+        return { status: 422, body: 'Unrecognised issue_comment payload' };
+      }
+
+      const normalized = normalizeIssueCommentPayload(result.data);
+
+      // Only handle comments on pull requests
+      if (!normalized.isPullRequest) return { status: 200, body: 'Event ignored' };
+
+      // Only handle /qa commands
+      if (!normalized.body.trim().startsWith('/qa')) return { status: 200, body: 'Event ignored' };
+
+      await enqueueEvent({
+        eventType: EventType.IssueCommentCreated,
+        installationId: String(normalized.installationGithubId),
+        repositoryId: String(normalized.repositoryGithubId),
+        payload: {
+          githubNumber: normalized.githubNumber,
+          commentId: normalized.commentId,
+          body: normalized.body,
+          authorLogin: normalized.authorLogin,
+          repositoryFullName: normalized.repositoryFullName,
+        },
+        correlationId: deliveryId,
+      });
+
+      context.log(`Enqueued issue_comment /qa command PR #${normalized.githubNumber} author=${normalized.authorLogin}`);
       return { status: 202, body: 'Accepted' };
     }
 

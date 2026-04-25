@@ -55,6 +55,7 @@ export const StepSchema = z.discriminatedUnion('type', [
 
 export const QABlockSchema = z.object({
   version: z.literal(1).default(1),
+  login: z.string().optional(),
   steps: z.array(StepSchema).min(1, 'steps must contain at least one step'),
 });
 

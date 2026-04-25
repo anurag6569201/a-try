@@ -12,6 +12,8 @@ export default defineConfig({
       '@preview-qa/reporter': path.resolve(__dirname, '../../packages/reporter/src/index.ts'),
       '@preview-qa/runner-playwright': path.resolve(__dirname, '../../packages/runner-playwright/src/index.ts'),
       '@preview-qa/vercel-adapter': path.resolve(__dirname, '../../packages/vercel-adapter/src/index.ts'),
+      '@preview-qa/ai': path.resolve(__dirname, '../../packages/ai/src/index.ts'),
+      '@preview-qa/planner': path.resolve(__dirname, '../../packages/planner/src/index.ts'),
     },
   },
   test: {

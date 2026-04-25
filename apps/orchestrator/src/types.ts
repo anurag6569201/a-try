@@ -16,6 +16,7 @@ export interface OrchestratorConfig {
     connectionString: string;
     containerName: string;
   };
+  keyVaultUrl?: string;
 }
 
 export interface PREventPayload {
