@@ -88,11 +88,12 @@ export async function handleIssueCommentEvent(
   const installation = await getInstallationById(pool, installationId);
   const tier = installation?.tier ?? BillingTier.Free;
   const tierLimits = TIER_LIMITS[tier] ?? TIER_LIMITS[BillingTier.Free];
+  const inGracePeriod = installation?.grace_period_ends_at != null && installation.grace_period_ends_at > new Date();
   const billingPeriodStart = new Date();
   billingPeriodStart.setDate(1);
   billingPeriodStart.setHours(0, 0, 0, 0);
   const monthlyRunCount = await countRunsForInstallationSince(pool, installationId, billingPeriodStart);
-  if (monthlyRunCount >= tierLimits.runsPerMonth) {
+  if (!inGracePeriod && monthlyRunCount >= tierLimits.runsPerMonth) {
     log.warn({ monthlyRunCount, limit: tierLimits.runsPerMonth, tier, installationId }, 'monthly run quota exceeded on /qa command');
     await postComment(
       octokit,

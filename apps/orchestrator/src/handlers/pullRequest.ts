@@ -84,11 +84,13 @@ export async function handlePullRequestEvent(
       const installation = await getInstallationById(pool, installationId);
       const tier = installation?.tier ?? BillingTier.Free;
       const tierLimits = TIER_LIMITS[tier] ?? TIER_LIMITS[BillingTier.Free];
+      // Grace period: installation had a payment failure but is still within the 7-day window
+      const inGracePeriod = installation?.grace_period_ends_at != null && installation.grace_period_ends_at > new Date();
       const billingPeriodStart = new Date();
       billingPeriodStart.setDate(1);
       billingPeriodStart.setHours(0, 0, 0, 0);
       const monthlyRunCount = await countRunsForInstallationSince(pool, installationId, billingPeriodStart);
-      if (monthlyRunCount >= tierLimits.runsPerMonth) {
+      if (!inGracePeriod && monthlyRunCount >= tierLimits.runsPerMonth) {
         log.warn({ monthlyRunCount, limit: tierLimits.runsPerMonth, tier, installationId }, 'monthly run quota exceeded');
         try {
           const octokit = await getInstallationOctokit(config.github, Number(installationId));

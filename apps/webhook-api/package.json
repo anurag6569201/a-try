@@ -15,7 +15,8 @@
     "@azure/service-bus": "^7.9.0",
     "@preview-qa/observability": "workspace:*",
     "@preview-qa/domain": "workspace:*",
-    "@preview-qa/schemas": "workspace:*"
+    "@preview-qa/schemas": "workspace:*",
+    "@preview-qa/db": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
