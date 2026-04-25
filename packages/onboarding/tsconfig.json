@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "./dist",
+    "paths": {
+      "@preview-qa/domain": ["../domain/src/index.ts"],
+      "@preview-qa/github-adapter": ["../github-adapter/src/index.ts"]
+    }
+  },
+  "include": ["src", "../domain/src", "../github-adapter/src"]
+}

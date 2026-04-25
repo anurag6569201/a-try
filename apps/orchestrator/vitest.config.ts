@@ -14,6 +14,7 @@ export default defineConfig({
       '@preview-qa/vercel-adapter': path.resolve(__dirname, '../../packages/vercel-adapter/src/index.ts'),
       '@preview-qa/ai': path.resolve(__dirname, '../../packages/ai/src/index.ts'),
       '@preview-qa/planner': path.resolve(__dirname, '../../packages/planner/src/index.ts'),
+      '@preview-qa/onboarding': path.resolve(__dirname, '../../packages/onboarding/src/index.ts'),
       '@preview-qa/observability': path.resolve(__dirname, '../../packages/observability/src/index.ts'),
     },
   },

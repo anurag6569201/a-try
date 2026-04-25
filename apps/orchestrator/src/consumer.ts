@@ -1,9 +1,10 @@
 import { ServiceBusClient, ServiceBusReceiver } from '@azure/service-bus';
 import { Pool } from 'pg';
 import { EventType } from '@preview-qa/domain';
-import { ServiceBusEnvelopeSchema, PullRequestEventEnvelopeSchema, IssueCommentEventEnvelopeSchema } from '@preview-qa/schemas';
+import { ServiceBusEnvelopeSchema, PullRequestEventEnvelopeSchema, IssueCommentEventEnvelopeSchema, InstallationEventEnvelopeSchema } from '@preview-qa/schemas';
 import { handlePullRequestEvent } from './handlers/pullRequest.js';
 import { handleIssueCommentEvent } from './handlers/issueComment.js';
+import { handleInstallationCreatedEvent } from './handlers/installation.js';
 import type { OrchestratorConfig } from './types.js';
 
 export class OrchestratorConsumer {
@@ -70,6 +71,12 @@ export class OrchestratorConsumer {
     if (eventType === EventType.IssueCommentCreated) {
       const parsed = IssueCommentEventEnvelopeSchema.parse(raw);
       await handleIssueCommentEvent(this.pool, this.config, parsed);
+      return;
+    }
+
+    if (eventType === EventType.InstallationCreated) {
+      const parsed = InstallationEventEnvelopeSchema.parse(raw);
+      await handleInstallationCreatedEvent(this.pool, this.config, parsed);
       return;
     }
 

@@ -1,0 +1,21 @@
+{
+  "name": "@preview-qa/onboarding",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@preview-qa/github-adapter": "workspace:*",
+    "@preview-qa/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@octokit/rest": "^20.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "*",
+    "vitest": "^2.0.0"
+  }
+}

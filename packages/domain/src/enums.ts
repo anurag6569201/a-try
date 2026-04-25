@@ -34,6 +34,7 @@ export enum EventType {
   DeploymentStatusCreated = 'deployment_status.created',
   IssueCommentCreated = 'issue_comment.created',
   CheckRunRerequested = 'check_run.rerequested',
+  InstallationCreated = 'installation.created',
 }
 
 export enum ParseOutcome {

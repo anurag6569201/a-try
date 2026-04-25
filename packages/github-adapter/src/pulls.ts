@@ -57,6 +57,66 @@ export async function getPRChangedFiles(
   return files;
 }
 
+export async function listOpenPRs(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  limit = 10,
+): Promise<PRMetadata[]> {
+  const { data } = await octokit.pulls.list({
+    owner,
+    repo,
+    state: 'open',
+    sort: 'updated',
+    direction: 'desc',
+    per_page: Math.min(limit, 100),
+  });
+  return data.map((pr) => ({
+    id: pr.id,
+    number: pr.number,
+    title: pr.title,
+    body: pr.body ?? null,
+    headSha: pr.head.sha,
+    headBranch: pr.head.ref,
+    baseBranch: pr.base.ref,
+    authorLogin: pr.user?.login ?? 'unknown',
+    isFork: pr.head.repo?.fork ?? false,
+    isDraft: pr.draft ?? false,
+    state: pr.state,
+  }));
+}
+
+export async function fileExistsInRepo(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  path: string,
+  ref?: string,
+): Promise<boolean> {
+  try {
+    await octokit.repos.getContent({ owner, repo, path, ...(ref !== undefined ? { ref } : {}) });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function getFileContent(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  path: string,
+  ref?: string,
+): Promise<string | null> {
+  try {
+    const { data } = await octokit.repos.getContent({ owner, repo, path, ...(ref !== undefined ? { ref } : {}) });
+    if (!('content' in data) || typeof data.content !== 'string') return null;
+    return Buffer.from(data.content, 'base64').toString('utf-8');
+  } catch {
+    return null;
+  }
+}
+
 export async function getPRMetadata(
   octokit: Octokit,
   owner: string,

@@ -22,6 +22,7 @@
     "@azure/storage-blob": "^12.24.0",
     "@preview-qa/reporter": "workspace:*",
     "@preview-qa/planner": "workspace:*",
+    "@preview-qa/onboarding": "workspace:*",
     "@preview-qa/runner-playwright": "workspace:*",
     "@preview-qa/vercel-adapter": "workspace:*",
     "playwright": "^1.48.0",
