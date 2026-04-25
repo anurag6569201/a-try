@@ -6,3 +6,4 @@ export * from './repositories/testCase';
 export * from './repositories/pullRequest';
 export * from './repositories/auditEvent';
 export * from './repositories/embedding';
+export * from './repositories/installation';
