@@ -1,8 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist"
+    "rootDir": "../..",
+    "outDir": "./dist",
+    "paths": {
+      "@preview-qa/domain": ["../domain/src/index.ts"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "../domain/src"]
 }
