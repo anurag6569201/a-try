@@ -2,16 +2,22 @@
   "name": "@preview-qa/ai",
   "version": "0.0.0",
   "private": true,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/packages/ai/src/index.js",
+  "types": "./dist/packages/ai/src/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"no tests yet\""
+    "test": "vitest run"
   },
-  "dependencies": {},
+  "dependencies": {
+    "openai": "^4.67.0",
+    "@preview-qa/domain": "workspace:*",
+    "pg": "^8.12.0"
+  },
   "devDependencies": {
-    "typescript": "*"
+    "@types/pg": "^8.11.0",
+    "typescript": "*",
+    "vitest": "^2.0.0"
   }
 }
