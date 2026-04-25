@@ -3,6 +3,7 @@ import { createRun, cancelSupersededRuns, getPullRequestByRepoAndNumber, getLate
 import type { Pool } from 'pg';
 import type { IssueCommentEventEnvelope } from '@preview-qa/schemas';
 import { getInstallationOctokit, isCollaborator, postComment, getPRMetadata } from '@preview-qa/github-adapter';
+import { createLogger } from '@preview-qa/observability';
 import type { OrchestratorConfig } from '../types.js';
 
 type QaCommand = 'rerun' | 'smoke' | 'help';
@@ -24,9 +25,14 @@ export async function handleIssueCommentEvent(
   const { installationId, repositoryId, payload } = envelope;
   const { githubNumber, body, authorLogin, repositoryFullName } = payload;
 
+  const log = createLogger('orchestrator', {
+    installationId: String(installationId),
+    repositoryId: String(repositoryId),
+  });
+
   const [owner, repo] = repositoryFullName.split('/');
   if (!owner || !repo) {
-    console.warn(`[issue_comment] Malformed repositoryFullName: ${repositoryFullName}`);
+    log.warn({ repositoryFullName }, 'malformed repositoryFullName in issue_comment event');
     return;
   }
 
@@ -38,7 +44,7 @@ export async function handleIssueCommentEvent(
   // Authorization: only collaborators can trigger commands
   const authorized = await isCollaborator(octokit, owner, repo, authorLogin);
   if (!authorized) {
-    console.warn(`[issue_comment] Unauthorized /qa command from ${authorLogin} on ${repositoryFullName}#${githubNumber}`);
+    log.warn({ authorLogin, repositoryFullName, githubNumber }, 'unauthorized /qa command');
     await postComment(
       octokit,
       owner,
@@ -57,7 +63,7 @@ export async function handleIssueCommentEvent(
   // Look up the pull_request record from our DB
   const pr = await getPullRequestByRepoAndNumber(pool, repositoryId, githubNumber);
   if (!pr) {
-    console.warn(`[issue_comment] PR not found in DB: repo=${repositoryId} #${githubNumber}`);
+    log.warn({ repositoryId, githubNumber }, 'PR not found in DB for /qa command');
     await postComment(
       octokit,
       owner,
@@ -74,7 +80,7 @@ export async function handleIssueCommentEvent(
     const metadata = await getPRMetadata(octokit, owner, repo, githubNumber);
     headSha = metadata.headSha;
   } catch (err) {
-    console.error(`[issue_comment] Failed to get PR metadata:`, err);
+    log.error({ err, githubNumber }, 'failed to get PR metadata');
     return;
   }
 
@@ -89,7 +95,7 @@ export async function handleIssueCommentEvent(
   }
   const triggeredBy = command === 'smoke' ? 'smoke_command' : 'rerun_command';
 
-  await createRun(pool, {
+  const run = await createRun(pool, {
     pull_request_id: pr.id,
     repository_id: repositoryId,
     installation_id: installationId,
@@ -98,7 +104,7 @@ export async function handleIssueCommentEvent(
     triggered_by: triggeredBy,
   });
 
-  console.log(`[issue_comment] Created new run: /qa ${command} PR #${githubNumber} mode=${mode} sha=${headSha}`);
+  log.info({ runId: run.id, command, githubNumber, mode, sha: headSha }, '/qa command: new run created');
 }
 
 function parseCommand(body: string): QaCommand | null {

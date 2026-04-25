@@ -13,6 +13,7 @@
     "@azure/identity": "^4.5.0",
     "@azure/keyvault-secrets": "^4.9.0",
     "@azure/service-bus": "^7.9.0",
+    "@preview-qa/observability": "workspace:*",
     "@preview-qa/db": "workspace:*",
     "@preview-qa/domain": "workspace:*",
     "@preview-qa/github-adapter": "workspace:*",

@@ -1,3 +1,4 @@
+import { initTelemetry, shutdownTelemetry, createLogger } from '@preview-qa/observability';
 import { executeRun } from '@preview-qa/runner-playwright';
 import { ArtifactKind } from '@preview-qa/domain';
 import { uploadArtifacts } from './uploader.js';
@@ -37,6 +38,13 @@ function requireEnv(name: string): string {
 }
 
 async function main(): Promise<void> {
+  initTelemetry({
+    serviceName: 'browser-runner',
+    ...(process.env['APPLICATIONINSIGHTS_CONNECTION_STRING'] !== undefined
+      ? { appInsightsConnectionString: process.env['APPLICATIONINSIGHTS_CONNECTION_STRING'] }
+      : {}),
+  });
+
   const inputJson = requireEnv('RUNNER_INPUT');
   const storageConnectionString = requireEnv('AZURE_STORAGE_CONNECTION_STRING');
   const containerName = process.env['AZURE_BLOB_CONTAINER'] ?? 'artifacts';
@@ -44,13 +52,14 @@ async function main(): Promise<void> {
   const jobInput = JSON.parse(inputJson) as RunnerJobInput;
   const { runId, previewUrl, steps } = jobInput;
 
+  const log = createLogger('browser-runner', { runId });
   const outputDir = path.join(os.tmpdir(), `run-${runId}`);
 
-  console.log(`[${runId}] Starting run against ${previewUrl} with ${steps.length} steps`);
+  log.info({ previewUrl, stepCount: steps.length }, 'starting run');
 
   const result = await executeRun({ previewUrl, steps, outputDir });
 
-  console.log(`[${runId}] Run ${result.outcome} in ${result.durationMs}ms`);
+  log.info({ outcome: result.outcome, durationMs: result.durationMs }, 'run complete');
 
   // Collect artifacts to upload
   const toUpload: Array<{ localPath: string; kind: ArtifactKind }> = [];
@@ -75,7 +84,7 @@ async function main(): Promise<void> {
       { connectionString: storageConnectionString, containerName, runId },
       toUpload,
     );
-    console.log(`[${runId}] Uploaded ${uploadedArtifacts.length} artifacts`);
+    log.info({ count: uploadedArtifacts.length }, 'artifacts uploaded');
   }
 
   const output: RunnerJobOutput = {
@@ -100,6 +109,8 @@ async function main(): Promise<void> {
   } catch {
     // best-effort
   }
+
+  await shutdownTelemetry();
 }
 
 main().catch((err: unknown) => {
