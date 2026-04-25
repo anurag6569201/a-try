@@ -1,4 +1,5 @@
 import type { RunMode } from '@preview-qa/domain';
+import type { AzureOpenAIConfig } from '@preview-qa/ai';
 
 export interface OrchestratorConfig {
   serviceBusConnectionString: string;
@@ -20,6 +21,7 @@ export interface OrchestratorConfig {
   concurrencyCap?: number;
   maxTestCasesPerPR?: number;
   rerunRateLimitPerHour?: number;
+  ai?: AzureOpenAIConfig;
 }
 
 export interface PREventPayload {
