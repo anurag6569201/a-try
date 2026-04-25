@@ -50,6 +50,7 @@ function buildConfig(): OrchestratorConfig {
               failureSummarizer: process.env['AZURE_OPENAI_DEPLOY_FAILURE_SUMMARIZER'] ?? 'failure-summarizer',
               riskClassifier: process.env['AZURE_OPENAI_DEPLOY_RISK_CLASSIFIER'] ?? 'risk-classifier',
               planSuggester: process.env['AZURE_OPENAI_DEPLOY_PLAN_SUGGESTER'] ?? 'plan-suggester',
+              embeddings: process.env['AZURE_OPENAI_DEPLOY_EMBEDDINGS'] ?? 'text-embedding-3-small',
             },
           },
         }
