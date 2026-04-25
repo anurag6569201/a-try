@@ -115,6 +115,8 @@ function makeEnvelope() {
       isFork: false,
       title: 'test PR',
       body: null,
+      owner: 'acme',
+      repo: 'myapp',
     },
   };
 }
@@ -128,53 +130,63 @@ beforeEach(() => {
     preview_url: null, started_at: null, completed_at: null,
     created_at: new Date(), updated_at: new Date(),
   });
-  mocks.mockCreateInitialCheck.mockResolvedValue(42);
   mocks.mockTransition.mockResolvedValue({ success: true });
   mocks.mockPollForPreview.mockResolvedValue({ status: 'resolved', url: 'https://p.example.com' });
   mocks.mockParsePRBody.mockReturnValue({ outcome: 'parse.not_found' });
   mocks.mockExtractYamlBlock.mockReturnValue({ found: false });
   mocks.mockBuildPlan.mockResolvedValue({ planId: 'plan-1', testCases: [{ name: 'Smoke', steps: [], order: 0 }] });
   mocks.mockExecuteRun.mockResolvedValue({ outcome: 'pass', steps: [], durationMs: 100 });
+  mocks.mockGetInstallationById.mockResolvedValue({ tier: 'free' });
+  mocks.mockCountRunsForInstallationSince.mockResolvedValue(0);
+  mocks.mockCountActiveRunsForInstallation.mockResolvedValue(0);
 });
 
-describe('Concurrency cap', () => {
-  it('proceeds normally when active runs are below the cap', async () => {
-    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(2);
-    await handlePullRequestEvent(fakePool, { ...fakeConfig, concurrencyCap: 5 }, makeEnvelope());
+describe('Billing quota enforcement', () => {
+  it('proceeds normally when monthly run count is below the free tier limit', async () => {
+    mocks.mockCountRunsForInstallationSince.mockResolvedValue(10);
+    await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope());
     expect(mocks.mockCreateRun).toHaveBeenCalledOnce();
   });
 
-  it('drops the run when active runs equal the cap', async () => {
-    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(5);
-    await handlePullRequestEvent(fakePool, { ...fakeConfig, concurrencyCap: 5 }, makeEnvelope());
-    expect(mocks.mockCreateRun).not.toHaveBeenCalled();
-  });
-
-  it('drops the run when active runs exceed the cap', async () => {
-    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(7);
-    await handlePullRequestEvent(fakePool, { ...fakeConfig, concurrencyCap: 5 }, makeEnvelope());
-    expect(mocks.mockCreateRun).not.toHaveBeenCalled();
-  });
-
-  it('uses default cap of 5 when not configured', async () => {
-    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(5);
+  it('blocks run and posts upgrade CTA when free tier quota is exceeded', async () => {
+    mocks.mockCountRunsForInstallationSince.mockResolvedValue(50); // free limit = 50
     await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope());
     expect(mocks.mockCreateRun).not.toHaveBeenCalled();
+    expect(mocks.mockUpsertStickyComment).toHaveBeenCalledOnce();
+    const body = (mocks.mockUpsertStickyComment.mock.calls[0] as unknown[])[1] as { body?: string };
+    expect(body?.body).toContain('Quota');
+    expect(body?.body).toContain('free');
+    expect(body?.body).toContain('50');
   });
 
-  it('passes maxTestCases to buildPlan when configured', async () => {
-    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(0);
-    await handlePullRequestEvent(fakePool, { ...fakeConfig, maxTestCasesPerPR: 10 }, makeEnvelope());
-    expect(mocks.mockBuildPlan).toHaveBeenCalledWith(
-      fakePool,
-      expect.objectContaining({ maxTestCases: 10 }),
-    );
-  });
-
-  it('does not pass maxTestCases to buildPlan when not configured', async () => {
-    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(0);
+  it('allows run when exactly one below the free tier limit', async () => {
+    mocks.mockCountRunsForInstallationSince.mockResolvedValue(49);
     await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope());
-    const callArg = mocks.mockBuildPlan.mock.calls[0]?.[1] as Record<string, unknown> | undefined;
-    expect(callArg?.['maxTestCases']).toBeUndefined();
+    expect(mocks.mockCreateRun).toHaveBeenCalledOnce();
+  });
+
+  it('uses starter tier limits when installation tier is starter', async () => {
+    mocks.mockGetInstallationById.mockResolvedValue({ tier: 'starter' });
+    mocks.mockCountRunsForInstallationSince.mockResolvedValue(499); // under starter limit of 500
+    await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope());
+    expect(mocks.mockCreateRun).toHaveBeenCalledOnce();
+  });
+
+  it('blocks run and posts upgrade CTA when starter tier quota is exceeded', async () => {
+    mocks.mockGetInstallationById.mockResolvedValue({ tier: 'starter' });
+    mocks.mockCountRunsForInstallationSince.mockResolvedValue(500); // starter limit = 500
+    await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope());
+    expect(mocks.mockCreateRun).not.toHaveBeenCalled();
+    expect(mocks.mockUpsertStickyComment).toHaveBeenCalledOnce();
+    const body = (mocks.mockUpsertStickyComment.mock.calls[0] as unknown[])[1] as { body?: string };
+    expect(body?.body).toContain('starter');
+    expect(body?.body).toContain('500');
+  });
+
+  it('falls back to free tier limits when installation is not found', async () => {
+    mocks.mockGetInstallationById.mockResolvedValue(null);
+    mocks.mockCountRunsForInstallationSince.mockResolvedValue(50);
+    await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope());
+    expect(mocks.mockCreateRun).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,15 @@
-import { RunState, RunMode, FailureCategory, ParseOutcome, ArtifactKind } from '@preview-qa/domain';
+import { RunState, RunMode, FailureCategory, ParseOutcome, ArtifactKind, BillingTier } from '@preview-qa/domain';
+
+export interface Installation {
+  id: string;
+  github_id: number;
+  account_login: string;
+  account_type: string;
+  tier: BillingTier;
+  suspended_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
 
 export interface PullRequest {
   id: string;

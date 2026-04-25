@@ -1,5 +1,5 @@
-import { RunMode } from '@preview-qa/domain';
-import { createRun, cancelSupersededRuns, getPullRequestByRepoAndNumber, getLatestRunForPR, countRerunsForPRSince } from '@preview-qa/db';
+import { RunMode, BillingTier, TIER_LIMITS } from '@preview-qa/domain';
+import { createRun, cancelSupersededRuns, getPullRequestByRepoAndNumber, getLatestRunForPR, countRerunsForPRSince, getInstallationById, countRunsForInstallationSince } from '@preview-qa/db';
 import type { Pool } from 'pg';
 import type { IssueCommentEventEnvelope } from '@preview-qa/schemas';
 import { getInstallationOctokit, isCollaborator, postComment, getPRMetadata } from '@preview-qa/github-adapter';
@@ -81,6 +81,26 @@ export async function handleIssueCommentEvent(
     headSha = metadata.headSha;
   } catch (err) {
     log.error({ err, githubNumber }, 'failed to get PR metadata');
+    return;
+  }
+
+  // Billing quota: check monthly run limit before creating a run
+  const installation = await getInstallationById(pool, installationId);
+  const tier = installation?.tier ?? BillingTier.Free;
+  const tierLimits = TIER_LIMITS[tier] ?? TIER_LIMITS[BillingTier.Free];
+  const billingPeriodStart = new Date();
+  billingPeriodStart.setDate(1);
+  billingPeriodStart.setHours(0, 0, 0, 0);
+  const monthlyRunCount = await countRunsForInstallationSince(pool, installationId, billingPeriodStart);
+  if (monthlyRunCount >= tierLimits.runsPerMonth) {
+    log.warn({ monthlyRunCount, limit: tierLimits.runsPerMonth, tier, installationId }, 'monthly run quota exceeded on /qa command');
+    await postComment(
+      octokit,
+      owner,
+      repo,
+      githubNumber,
+      `@${authorLogin} Your **${tier}** plan has reached its monthly run limit (${tierLimits.runsPerMonth} runs). [Upgrade your plan](https://preview-qa.dev/pricing) to continue.`,
+    );
     return;
   }
 

@@ -59,3 +59,17 @@ export enum ArtifactKind {
   Video = 'video',
   Log = 'log',
 }
+
+export enum BillingTier {
+  Free = 'free',
+  Starter = 'starter',
+  Growth = 'growth',
+  Team = 'team',
+}
+
+export const TIER_LIMITS: Record<BillingTier, { runsPerMonth: number; concurrencyCap: number; reposPerInstallation: number }> = {
+  [BillingTier.Free]:    { runsPerMonth: 50,   concurrencyCap: 2,  reposPerInstallation: 1 },
+  [BillingTier.Starter]: { runsPerMonth: 500,  concurrencyCap: 5,  reposPerInstallation: 5 },
+  [BillingTier.Growth]:  { runsPerMonth: 2000, concurrencyCap: 10, reposPerInstallation: 20 },
+  [BillingTier.Team]:    { runsPerMonth: 10000, concurrencyCap: 20, reposPerInstallation: 100 },
+};

@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => {
   const mockGetLatestRunForPR = vi.fn();
   const mockCancelSupersededRuns = vi.fn().mockResolvedValue(0);
   const mockCountRerunsForPRSince = vi.fn().mockResolvedValue(0);
+  const mockGetInstallationById = vi.fn().mockResolvedValue({ tier: 'free' });
+  const mockCountRunsForInstallationSince = vi.fn().mockResolvedValue(0);
   const mockCreateRun = vi.fn();
   return {
     mockGetInstallationOctokit,
@@ -20,6 +22,8 @@ const mocks = vi.hoisted(() => {
     mockGetLatestRunForPR,
     mockCancelSupersededRuns,
     mockCountRerunsForPRSince,
+    mockGetInstallationById,
+    mockCountRunsForInstallationSince,
     mockCreateRun,
   };
 });
@@ -36,6 +40,8 @@ vi.mock('@preview-qa/db', () => ({
   getLatestRunForPR: mocks.mockGetLatestRunForPR,
   cancelSupersededRuns: mocks.mockCancelSupersededRuns,
   countRerunsForPRSince: mocks.mockCountRerunsForPRSince,
+  getInstallationById: mocks.mockGetInstallationById,
+  countRunsForInstallationSince: mocks.mockCountRunsForInstallationSince,
   createRun: mocks.mockCreateRun,
 }));
 

@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => {
   const mockCancelSupersededRuns = vi.fn().mockResolvedValue(0);
   const mockCreateAuditEvent = vi.fn().mockResolvedValue({ id: 'audit-1' });
   const mockCountActiveRunsForInstallation = vi.fn().mockResolvedValue(0);
+  const mockGetInstallationById = vi.fn().mockResolvedValue({ tier: 'free' });
+  const mockCountRunsForInstallationSince = vi.fn().mockResolvedValue(0);
   const mockCreateInitialCheck = vi.fn().mockResolvedValue(42);
   const mockReportStateChange = vi.fn().mockResolvedValue(undefined);
   const mockReportStateChangeWithBody = vi.fn().mockResolvedValue(undefined);
@@ -19,7 +21,7 @@ const mocks = vi.hoisted(() => {
   const mockGetInstallationOctokit = vi.fn().mockResolvedValue({});
   return {
     mockCreateRun, mockCancelSupersededRuns, mockCreateAuditEvent,
-    mockCountActiveRunsForInstallation,
+    mockCountActiveRunsForInstallation, mockGetInstallationById, mockCountRunsForInstallationSince,
     mockCreateInitialCheck, mockReportStateChange, mockReportStateChangeWithBody,
     mockTransition, mockPollForPreview, mockParsePRBody, mockExtractYamlBlock,
     mockBuildPlan, mockExecuteRun, mockUpsertStickyComment, mockGetInstallationOctokit,
@@ -31,6 +33,8 @@ vi.mock('@preview-qa/db', () => ({
   cancelSupersededRuns: mocks.mockCancelSupersededRuns,
   createAuditEvent: mocks.mockCreateAuditEvent,
   countActiveRunsForInstallation: mocks.mockCountActiveRunsForInstallation,
+  getInstallationById: mocks.mockGetInstallationById,
+  countRunsForInstallationSince: mocks.mockCountRunsForInstallationSince,
 }));
 
 vi.mock('../github-reporter.js', () => ({

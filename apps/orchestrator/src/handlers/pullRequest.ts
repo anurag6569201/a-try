@@ -1,5 +1,5 @@
-import { RunState, RunMode, EventType, ArtifactKind, ParseOutcome } from '@preview-qa/domain';
-import { createRun, cancelSupersededRuns, createAuditEvent, countActiveRunsForInstallation } from '@preview-qa/db';
+import { RunState, RunMode, EventType, ArtifactKind, ParseOutcome, BillingTier, TIER_LIMITS } from '@preview-qa/domain';
+import { createRun, cancelSupersededRuns, createAuditEvent, countActiveRunsForInstallation, getInstallationById, countRunsForInstallationSince } from '@preview-qa/db';
 import type { Pool } from 'pg';
 import type { PullRequestEventEnvelope } from '@preview-qa/schemas';
 import { upsertStickyComment, getInstallationOctokit, getPRChangedFiles } from '@preview-qa/github-adapter';
@@ -80,8 +80,32 @@ export async function handlePullRequestEvent(
         }
       }
 
+      // Billing quota: check monthly run limit against installation tier
+      const installation = await getInstallationById(pool, installationId);
+      const tier = installation?.tier ?? BillingTier.Free;
+      const tierLimits = TIER_LIMITS[tier] ?? TIER_LIMITS[BillingTier.Free];
+      const billingPeriodStart = new Date();
+      billingPeriodStart.setDate(1);
+      billingPeriodStart.setHours(0, 0, 0, 0);
+      const monthlyRunCount = await countRunsForInstallationSince(pool, installationId, billingPeriodStart);
+      if (monthlyRunCount >= tierLimits.runsPerMonth) {
+        log.warn({ monthlyRunCount, limit: tierLimits.runsPerMonth, tier, installationId }, 'monthly run quota exceeded');
+        try {
+          const octokit = await getInstallationOctokit(config.github, Number(installationId));
+          await upsertStickyComment(octokit, {
+            owner: owner ?? '',
+            repo: repo ?? '',
+            pullNumber: githubNumber,
+            body: formatQuotaExceededComment(tier, tierLimits.runsPerMonth),
+          });
+        } catch (err) {
+          log.error({ err }, 'failed to post quota exceeded comment');
+        }
+        return;
+      }
+
       // Concurrency cap: block new runs if installation is already at its limit
-      const concurrencyCap = config.concurrencyCap ?? 5;
+      const concurrencyCap = config.concurrencyCap ?? tierLimits.concurrencyCap;
       const activeCount = await countActiveRunsForInstallation(pool, installationId);
       if (activeCount >= concurrencyCap) {
         log.warn({ activeCount, concurrencyCap, installationId }, 'concurrency cap reached — run dropped');
@@ -368,6 +392,21 @@ export async function handlePullRequestEvent(
       await reportStateChangeWithBody(reporterCtx, checkRunId, finalState, formatCheckBody(report));
     },
   );
+}
+
+function formatQuotaExceededComment(tier: BillingTier, limit: number): string {
+  const upgradeUrl = 'https://preview-qa.dev/pricing';
+  return [
+    '## preview-qa: Monthly Run Quota Reached',
+    '',
+    `Your **${tier}** plan includes **${limit} runs/month** and you've reached the limit for this billing period.`,
+    '',
+    'Automated QA runs are paused until the quota resets at the start of next month, or until you upgrade.',
+    '',
+    `[**Upgrade your plan →**](${upgradeUrl})`,
+    '',
+    '_This comment will be updated when your quota resets._',
+  ].join('\n');
 }
 
 async function uploadRunArtifacts(
