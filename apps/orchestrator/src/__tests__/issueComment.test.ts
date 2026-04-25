@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => {
   const mockGetPullRequestByRepoAndNumber = vi.fn();
   const mockGetLatestRunForPR = vi.fn();
   const mockCancelSupersededRuns = vi.fn().mockResolvedValue(0);
+  const mockCountRerunsForPRSince = vi.fn().mockResolvedValue(0);
   const mockCreateRun = vi.fn();
   return {
     mockGetInstallationOctokit,
@@ -18,6 +19,7 @@ const mocks = vi.hoisted(() => {
     mockGetPullRequestByRepoAndNumber,
     mockGetLatestRunForPR,
     mockCancelSupersededRuns,
+    mockCountRerunsForPRSince,
     mockCreateRun,
   };
 });
@@ -33,6 +35,7 @@ vi.mock('@preview-qa/db', () => ({
   getPullRequestByRepoAndNumber: mocks.mockGetPullRequestByRepoAndNumber,
   getLatestRunForPR: mocks.mockGetLatestRunForPR,
   cancelSupersededRuns: mocks.mockCancelSupersededRuns,
+  countRerunsForPRSince: mocks.mockCountRerunsForPRSince,
   createRun: mocks.mockCreateRun,
 }));
 
@@ -200,6 +203,40 @@ describe('handleIssueCommentEvent — non-qa comment', () => {
   it('ignores comments that do not start with /qa', async () => {
     await handleIssueCommentEvent(fakePool, fakeConfig, makeEnvelope('looks good to me!'));
     expect(mocks.mockIsCollaborator).not.toHaveBeenCalled();
+    expect(mocks.mockCreateRun).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleIssueCommentEvent — rerun rate limit', () => {
+  it('creates run when rerun count is below the limit', async () => {
+    mocks.mockIsCollaborator.mockResolvedValue(true);
+    mocks.mockGetPullRequestByRepoAndNumber.mockResolvedValue(fakePR);
+    mocks.mockGetLatestRunForPR.mockResolvedValue({ mode: RunMode.Smoke });
+    mocks.mockCountRerunsForPRSince.mockResolvedValue(3);
+    await handleIssueCommentEvent(fakePool, { ...fakeConfig, rerunRateLimitPerHour: 5 }, makeEnvelope('/qa rerun'));
+    expect(mocks.mockCreateRun).toHaveBeenCalledOnce();
+  });
+
+  it('blocks run and posts comment when rate limit is reached', async () => {
+    mocks.mockIsCollaborator.mockResolvedValue(true);
+    mocks.mockGetPullRequestByRepoAndNumber.mockResolvedValue(fakePR);
+    mocks.mockCountRerunsForPRSince.mockResolvedValue(5);
+    await handleIssueCommentEvent(fakePool, { ...fakeConfig, rerunRateLimitPerHour: 5 }, makeEnvelope('/qa rerun'));
+    expect(mocks.mockCreateRun).not.toHaveBeenCalled();
+    expect(mocks.mockPostComment).toHaveBeenCalledWith(
+      expect.anything(),
+      'acme',
+      'myapp',
+      42,
+      expect.stringContaining('rate limit'),
+    );
+  });
+
+  it('uses default rate limit of 5 when not configured', async () => {
+    mocks.mockIsCollaborator.mockResolvedValue(true);
+    mocks.mockGetPullRequestByRepoAndNumber.mockResolvedValue(fakePR);
+    mocks.mockCountRerunsForPRSince.mockResolvedValue(5);
+    await handleIssueCommentEvent(fakePool, fakeConfig, makeEnvelope('/qa rerun'));
     expect(mocks.mockCreateRun).not.toHaveBeenCalled();
   });
 });

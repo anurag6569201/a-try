@@ -100,6 +100,54 @@ export async function cancelSupersededRuns(
   return rowCount ?? 0;
 }
 
+export async function countActiveRunsForInstallation(
+  pool: Pool,
+  installationId: string,
+): Promise<number> {
+  const terminalStates: RunState[] = [RunState.Completed, RunState.Failed, RunState.Canceled, RunState.BlockedEnvironment];
+  const { rows } = await pool.query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count FROM run
+     WHERE installation_id = $1
+       AND state != ALL($2::text[])`,
+    [installationId, terminalStates],
+  );
+  return parseInt(rows[0]?.count ?? '0', 10);
+}
+
+export async function countRerunsForPRSince(
+  pool: Pool,
+  pullRequestId: string,
+  since: Date,
+): Promise<number> {
+  const rerunTriggers = ['smoke_command', 'rerun_command'];
+  const { rows } = await pool.query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count FROM run
+     WHERE pull_request_id = $1
+       AND triggered_by = ANY($2::text[])
+       AND created_at >= $3`,
+    [pullRequestId, rerunTriggers, since],
+  );
+  return parseInt(rows[0]?.count ?? '0', 10);
+}
+
+export async function deleteOldRuns(pool: Pool, olderThanDays: number): Promise<number> {
+  const { rowCount } = await pool.query(
+    `DELETE FROM run
+     WHERE created_at < NOW() - ($1 || ' days')::interval
+       AND state = ANY($2::text[])`,
+    [olderThanDays, [RunState.Completed, RunState.Failed, RunState.Canceled, RunState.BlockedEnvironment]],
+  );
+  return rowCount ?? 0;
+}
+
+export async function deleteOldAuditEvents(pool: Pool, olderThanDays: number): Promise<number> {
+  const { rowCount } = await pool.query(
+    `DELETE FROM audit_event WHERE created_at < NOW() - ($1 || ' days')::interval`,
+    [olderThanDays],
+  );
+  return rowCount ?? 0;
+}
+
 export async function transitionRunState(
   pool: Pool,
   id: string,

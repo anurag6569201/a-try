@@ -30,6 +30,15 @@ function buildConfig(): OrchestratorConfig {
     ...(process.env['AZURE_KEY_VAULT_URL'] !== undefined
       ? { keyVaultUrl: process.env['AZURE_KEY_VAULT_URL'] }
       : {}),
+    ...(process.env['CONCURRENCY_CAP'] !== undefined
+      ? { concurrencyCap: Number(process.env['CONCURRENCY_CAP']) }
+      : {}),
+    ...(process.env['MAX_TEST_CASES_PER_PR'] !== undefined
+      ? { maxTestCasesPerPR: Number(process.env['MAX_TEST_CASES_PER_PR']) }
+      : {}),
+    ...(process.env['RERUN_RATE_LIMIT_PER_HOUR'] !== undefined
+      ? { rerunRateLimitPerHour: Number(process.env['RERUN_RATE_LIMIT_PER_HOUR']) }
+      : {}),
   };
 }
 

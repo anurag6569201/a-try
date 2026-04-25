@@ -7,19 +7,25 @@ import { buildSmokeSteps } from './smokeSteps.js';
 import { normalizeSteps } from './normalizer.js';
 import type { PlannerInput, PlannerOutput, ResolvedTestCase } from './types.js';
 
+const DEFAULT_MAX_TEST_CASES = 20;
+
 export async function buildPlan(
   pool: Pool,
   input: PlannerInput,
   aiConfig?: AzureOpenAIConfig,
 ): Promise<PlannerOutput> {
   const { runId, mode, previewUrl, parsedSteps, rawYaml, useAiNormalization } = input;
+  const maxTestCases = input.maxTestCases ?? DEFAULT_MAX_TEST_CASES;
 
   // Determine steps by mode
   const { parseOutcome, testCaseDefs } = resolveMode(mode, parsedSteps, previewUrl);
 
+  // Enforce max test cases cap
+  const cappedDefs = testCaseDefs.slice(0, maxTestCases);
+
   // Optionally normalize ambiguous selectors via AI
   const normalizedDefs: ResolvedTestCase[] = await Promise.all(
-    testCaseDefs.map(async (tc) => {
+    cappedDefs.map(async (tc) => {
       if (useAiNormalization && aiConfig) {
         const normalizedSteps = await normalizeSteps(pool, aiConfig, runId, tc.steps, previewUrl);
         return { ...tc, steps: normalizedSteps };

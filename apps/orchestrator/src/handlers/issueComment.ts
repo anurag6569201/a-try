@@ -1,5 +1,5 @@
 import { RunMode } from '@preview-qa/domain';
-import { createRun, cancelSupersededRuns, getPullRequestByRepoAndNumber, getLatestRunForPR } from '@preview-qa/db';
+import { createRun, cancelSupersededRuns, getPullRequestByRepoAndNumber, getLatestRunForPR, countRerunsForPRSince } from '@preview-qa/db';
 import type { Pool } from 'pg';
 import type { IssueCommentEventEnvelope } from '@preview-qa/schemas';
 import { getInstallationOctokit, isCollaborator, postComment, getPRMetadata } from '@preview-qa/github-adapter';
@@ -81,6 +81,22 @@ export async function handleIssueCommentEvent(
     headSha = metadata.headSha;
   } catch (err) {
     log.error({ err, githubNumber }, 'failed to get PR metadata');
+    return;
+  }
+
+  // Rerun rate limit: max N reruns per PR per hour (default 5)
+  const rateLimitPerHour = config.rerunRateLimitPerHour ?? 5;
+  const since = new Date(Date.now() - 60 * 60 * 1000);
+  const rerunCount = await countRerunsForPRSince(pool, pr.id, since);
+  if (rerunCount >= rateLimitPerHour) {
+    log.warn({ rerunCount, rateLimitPerHour, githubNumber }, 'rerun rate limit reached');
+    await postComment(
+      octokit,
+      owner,
+      repo,
+      githubNumber,
+      `@${authorLogin} Rerun rate limit reached (${rateLimitPerHour} reruns per hour). Please wait before triggering another run.`,
+    );
     return;
   }
 
