@@ -8,6 +8,7 @@
       "@preview-qa/db": ["../../packages/db/src/index.ts"],
       "@preview-qa/schemas": ["../../packages/schemas/src/index.ts"],
       "@preview-qa/github-adapter": ["../../packages/github-adapter/src/index.ts"],
+      "@preview-qa/parser": ["../../packages/parser/src/index.ts"],
       "@preview-qa/reporter": ["../../packages/reporter/src/index.ts"],
       "@preview-qa/runner-playwright": ["../../packages/runner-playwright/src/index.ts"],
       "@preview-qa/vercel-adapter": ["../../packages/vercel-adapter/src/index.ts"]
@@ -19,6 +20,7 @@
     "../../packages/db/src",
     "../../packages/schemas/src",
     "../../packages/github-adapter/src",
+    "../../packages/parser/src",
     "../../packages/reporter/src",
     "../../packages/runner-playwright/src",
     "../../packages/vercel-adapter/src"

@@ -14,6 +14,7 @@
     "@preview-qa/db": "workspace:*",
     "@preview-qa/domain": "workspace:*",
     "@preview-qa/github-adapter": "workspace:*",
+    "@preview-qa/parser": "workspace:*",
     "@preview-qa/schemas": "workspace:*",
     "@azure/storage-blob": "^12.24.0",
     "@preview-qa/reporter": "workspace:*",
