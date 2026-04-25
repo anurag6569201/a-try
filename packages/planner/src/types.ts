@@ -8,6 +8,7 @@ export interface PlannerInput {
   parsedSteps: ParsedStep[] | null;
   rawYaml: string | null;
   useAiNormalization?: boolean;
+  maxTestCases?: number;
 }
 
 export interface ResolvedTestCase {

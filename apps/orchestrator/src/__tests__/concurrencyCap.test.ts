@@ -67,7 +67,13 @@ vi.mock('@preview-qa/github-adapter', () => ({
 }));
 
 vi.mock('@azure/storage-blob', () => ({
-  BlobServiceClient: { fromConnectionString: vi.fn().mockReturnValue({ getContainerClient: vi.fn().mockReturnValue({ getBlockBlobClient: vi.fn().mockReturnValue({ uploadFile: vi.fn(), url: 'https://blob.test/file' }) }) }) },
+  BlobServiceClient: {
+    fromConnectionString: vi.fn().mockReturnValue({
+      getContainerClient: vi.fn().mockReturnValue({
+        getBlockBlobClient: vi.fn().mockReturnValue({ uploadFile: vi.fn(), url: 'https://blob.test/file' }),
+      }),
+    }),
+  },
 }));
 
 vi.mock('../loginProfile.js', () => ({
@@ -86,7 +92,7 @@ const fakeConfig = {
   storage: { connectionString: '', containerName: 'a' },
 };
 
-function makeEnvelope(isFork: boolean) {
+function makeEnvelope() {
   return {
     messageId: '00000000-0000-0000-0000-000000000001',
     eventType: 'pull_request.opened' as never,
@@ -100,8 +106,8 @@ function makeEnvelope(isFork: boolean) {
       sha: 'aaaa'.repeat(10),
       headBranch: 'feat/x',
       baseBranch: 'main',
-      authorLogin: 'outsider',
-      isFork,
+      authorLogin: 'dev',
+      isFork: false,
       title: 'test PR',
       body: null,
     },
@@ -117,7 +123,6 @@ beforeEach(() => {
     preview_url: null, started_at: null, completed_at: null,
     created_at: new Date(), updated_at: new Date(),
   });
-  mocks.mockCreateAuditEvent.mockResolvedValue({ id: 'audit-1' });
   mocks.mockCreateInitialCheck.mockResolvedValue(42);
   mocks.mockTransition.mockResolvedValue({ success: true });
   mocks.mockPollForPreview.mockResolvedValue({ status: 'resolved', url: 'https://p.example.com' });
@@ -125,37 +130,46 @@ beforeEach(() => {
   mocks.mockExtractYamlBlock.mockReturnValue({ found: false });
   mocks.mockBuildPlan.mockResolvedValue({ planId: 'plan-1', testCases: [{ name: 'Smoke', steps: [], order: 0 }] });
   mocks.mockExecuteRun.mockResolvedValue({ outcome: 'pass', steps: [], durationMs: 100 });
-  mocks.mockUpsertStickyComment.mockResolvedValue(1);
-  mocks.mockGetInstallationOctokit.mockResolvedValue({});
 });
 
-describe('Fork policy', () => {
-  it('creates audit event when PR is from a fork', async () => {
-    await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope(true));
-    expect(mocks.mockCreateAuditEvent).toHaveBeenCalledWith(
-      fakePool,
-      expect.objectContaining({ event_type: 'fork_policy.downgrade' }),
-    );
+describe('Concurrency cap', () => {
+  it('proceeds normally when active runs are below the cap', async () => {
+    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(2);
+    await handlePullRequestEvent(fakePool, { ...fakeConfig, concurrencyCap: 5 }, makeEnvelope());
+    expect(mocks.mockCreateRun).toHaveBeenCalledOnce();
   });
 
-  it('creates run with smoke mode for fork PR regardless of requested mode', async () => {
-    await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope(true));
-    expect(mocks.mockCreateRun).toHaveBeenCalledWith(
-      fakePool,
-      expect.objectContaining({ mode: RunMode.Smoke }),
-    );
+  it('drops the run when active runs equal the cap', async () => {
+    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(5);
+    await handlePullRequestEvent(fakePool, { ...fakeConfig, concurrencyCap: 5 }, makeEnvelope());
+    expect(mocks.mockCreateRun).not.toHaveBeenCalled();
   });
 
-  it('passes null parsedSteps to buildPlan for fork PR', async () => {
-    await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope(true));
+  it('drops the run when active runs exceed the cap', async () => {
+    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(7);
+    await handlePullRequestEvent(fakePool, { ...fakeConfig, concurrencyCap: 5 }, makeEnvelope());
+    expect(mocks.mockCreateRun).not.toHaveBeenCalled();
+  });
+
+  it('uses default cap of 5 when not configured', async () => {
+    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(5);
+    await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope());
+    expect(mocks.mockCreateRun).not.toHaveBeenCalled();
+  });
+
+  it('passes maxTestCases to buildPlan when configured', async () => {
+    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(0);
+    await handlePullRequestEvent(fakePool, { ...fakeConfig, maxTestCasesPerPR: 10 }, makeEnvelope());
     expect(mocks.mockBuildPlan).toHaveBeenCalledWith(
       fakePool,
-      expect.objectContaining({ parsedSteps: null, mode: RunMode.Smoke }),
+      expect.objectContaining({ maxTestCases: 10 }),
     );
   });
 
-  it('does not create audit event for non-fork PR', async () => {
-    await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope(false));
-    expect(mocks.mockCreateAuditEvent).not.toHaveBeenCalled();
+  it('does not pass maxTestCases to buildPlan when not configured', async () => {
+    mocks.mockCountActiveRunsForInstallation.mockResolvedValue(0);
+    await handlePullRequestEvent(fakePool, fakeConfig, makeEnvelope());
+    const callArg = mocks.mockBuildPlan.mock.calls[0]?.[1] as Record<string, unknown> | undefined;
+    expect(callArg?.['maxTestCases']).toBeUndefined();
   });
 });

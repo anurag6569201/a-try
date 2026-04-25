@@ -96,7 +96,7 @@ export function formatPRComment(report: RunReport): string {
     `<sub>Run \`${report.runId.slice(0, 8)}\` · SHA \`${report.sha.slice(0, 7)}\`</sub>`,
   ].join('\n');
 
-  return body;
+  return redactSecrets(body);
 }
 
 export function formatCheckBody(report: RunReport): string {

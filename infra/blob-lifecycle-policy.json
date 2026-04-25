@@ -1,0 +1,89 @@
+{
+  "rules": [
+    {
+      "name": "delete-screenshots",
+      "enabled": true,
+      "type": "Lifecycle",
+      "definition": {
+        "filters": {
+          "blobTypes": ["blockBlob"],
+          "prefixMatch": ["artifacts/runs/"],
+          "blobIndexMatch": [
+            {
+              "name": "kind",
+              "op": "==",
+              "value": "screenshot"
+            }
+          ]
+        },
+        "actions": {
+          "baseBlob": {
+            "delete": { "daysAfterModificationGreaterThan": 30 }
+          }
+        }
+      }
+    },
+    {
+      "name": "delete-traces",
+      "enabled": true,
+      "type": "Lifecycle",
+      "definition": {
+        "filters": {
+          "blobTypes": ["blockBlob"],
+          "prefixMatch": ["artifacts/runs/"],
+          "blobIndexMatch": [
+            {
+              "name": "kind",
+              "op": "==",
+              "value": "trace"
+            }
+          ]
+        },
+        "actions": {
+          "baseBlob": {
+            "delete": { "daysAfterModificationGreaterThan": 14 }
+          }
+        }
+      }
+    },
+    {
+      "name": "delete-videos",
+      "enabled": true,
+      "type": "Lifecycle",
+      "definition": {
+        "filters": {
+          "blobTypes": ["blockBlob"],
+          "prefixMatch": ["artifacts/runs/"],
+          "blobIndexMatch": [
+            {
+              "name": "kind",
+              "op": "==",
+              "value": "video"
+            }
+          ]
+        },
+        "actions": {
+          "baseBlob": {
+            "delete": { "daysAfterModificationGreaterThan": 14 }
+          }
+        }
+      }
+    },
+    {
+      "name": "delete-logs",
+      "enabled": true,
+      "type": "Lifecycle",
+      "definition": {
+        "filters": {
+          "blobTypes": ["blockBlob"],
+          "prefixMatch": ["logs/"]
+        },
+        "actions": {
+          "baseBlob": {
+            "delete": { "daysAfterModificationGreaterThan": 30 }
+          }
+        }
+      }
+    }
+  ]
+}

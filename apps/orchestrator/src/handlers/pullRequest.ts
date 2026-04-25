@@ -1,5 +1,5 @@
 import { RunState, RunMode, EventType, ArtifactKind, ParseOutcome } from '@preview-qa/domain';
-import { createRun, cancelSupersededRuns, createAuditEvent } from '@preview-qa/db';
+import { createRun, cancelSupersededRuns, createAuditEvent, countActiveRunsForInstallation } from '@preview-qa/db';
 import type { Pool } from 'pg';
 import type { PullRequestEventEnvelope } from '@preview-qa/schemas';
 import { upsertStickyComment, getInstallationOctokit } from '@preview-qa/github-adapter';
@@ -77,6 +77,14 @@ export async function handlePullRequestEvent(
         } catch (err) {
           log.error({ err }, 'failed to write fork policy audit event');
         }
+      }
+
+      // Concurrency cap: block new runs if installation is already at its limit
+      const concurrencyCap = config.concurrencyCap ?? 5;
+      const activeCount = await countActiveRunsForInstallation(pool, installationId);
+      if (activeCount >= concurrencyCap) {
+        log.warn({ activeCount, concurrencyCap, installationId }, 'concurrency cap reached — run dropped');
+        return;
       }
 
       await cancelSupersededRuns(pool, pullRequestId, sha);
@@ -190,6 +198,7 @@ export async function handlePullRequestEvent(
         previewUrl: resolvedPreviewUrl ?? '',
         parsedSteps: planParsedSteps,
         rawYaml,
+        ...(config.maxTestCasesPerPR !== undefined ? { maxTestCases: config.maxTestCasesPerPR } : {}),
       });
       const steps = (testCases[0]?.steps ?? []) as Step[];
 

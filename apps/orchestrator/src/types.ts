@@ -17,6 +17,9 @@ export interface OrchestratorConfig {
     containerName: string;
   };
   keyVaultUrl?: string;
+  concurrencyCap?: number;
+  maxTestCasesPerPR?: number;
+  rerunRateLimitPerHour?: number;
 }
 
 export interface PREventPayload {
