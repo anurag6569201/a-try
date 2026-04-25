@@ -10,6 +10,8 @@
       "@preview-qa/github-adapter": ["../../packages/github-adapter/src/index.ts"],
       "@preview-qa/parser": ["../../packages/parser/src/index.ts"],
       "@preview-qa/reporter": ["../../packages/reporter/src/index.ts"],
+      "@preview-qa/ai": ["../../packages/ai/src/index.ts"],
+      "@preview-qa/planner": ["../../packages/planner/src/index.ts"],
       "@preview-qa/runner-playwright": ["../../packages/runner-playwright/src/index.ts"],
       "@preview-qa/vercel-adapter": ["../../packages/vercel-adapter/src/index.ts"]
     }
@@ -22,6 +24,8 @@
     "../../packages/github-adapter/src",
     "../../packages/parser/src",
     "../../packages/reporter/src",
+    "../../packages/ai/src",
+    "../../packages/planner/src",
     "../../packages/runner-playwright/src",
     "../../packages/vercel-adapter/src"
   ]
