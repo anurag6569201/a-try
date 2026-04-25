@@ -58,7 +58,23 @@ export const IssueCommentEventEnvelopeSchema = ServiceBusEnvelopeSchema.extend({
   }),
 });
 
+export const InstallationEventEnvelopeSchema = ServiceBusEnvelopeSchema.extend({
+  eventType: z.literal(EventType.InstallationCreated),
+  payload: z.object({
+    installationGithubId: z.number(),
+    accountLogin: z.string(),
+    accountType: z.string(),
+    repositories: z.array(z.object({
+      id: z.number(),
+      name: z.string(),
+      fullName: z.string(),
+      private: z.boolean(),
+    })).optional(),
+  }),
+});
+
 export type ServiceBusEnvelope = z.infer<typeof ServiceBusEnvelopeSchema>;
 export type PullRequestEventEnvelope = z.infer<typeof PullRequestEventEnvelopeSchema>;
 export type DeploymentStatusEventEnvelope = z.infer<typeof DeploymentStatusEventEnvelopeSchema>;
 export type IssueCommentEventEnvelope = z.infer<typeof IssueCommentEventEnvelopeSchema>;
+export type InstallationEventEnvelope = z.infer<typeof InstallationEventEnvelopeSchema>;

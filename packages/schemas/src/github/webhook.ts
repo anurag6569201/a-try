@@ -148,9 +148,34 @@ export const IssueCommentPayloadSchema = z.object({
   installation: InstallationRefSchema,
 });
 
+// installation event — fired when the GitHub App is installed on an account/repo
+export const InstallationPayloadSchema = z.object({
+  action: z.enum(['created', 'deleted', 'suspend', 'unsuspend', 'new_permissions_accepted']),
+  installation: z.object({
+    id: z.number(),
+    account: UserSchema,
+    app_id: z.number(),
+    repository_selection: z.enum(['all', 'selected']),
+    created_at: z.string(),
+    updated_at: z.string(),
+  }),
+  repositories: z
+    .array(
+      z.object({
+        id: z.number(),
+        name: z.string(),
+        full_name: z.string(),
+        private: z.boolean(),
+      }),
+    )
+    .optional(),
+  sender: UserSchema,
+});
+
 export type PullRequestOpenedPayload = z.infer<typeof PullRequestOpenedPayloadSchema>;
 export type PullRequestSynchronizePayload = z.infer<typeof PullRequestSynchronizePayloadSchema>;
 export type PullRequestReopenedPayload = z.infer<typeof PullRequestReopenedPayloadSchema>;
 export type PullRequestWebhookPayload = z.infer<typeof PullRequestWebhookPayloadSchema>;
 export type DeploymentStatusPayload = z.infer<typeof DeploymentStatusPayloadSchema>;
 export type IssueCommentPayload = z.infer<typeof IssueCommentPayloadSchema>;
+export type InstallationPayload = z.infer<typeof InstallationPayloadSchema>;

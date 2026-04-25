@@ -4,6 +4,7 @@ import {
   PullRequestWebhookPayloadSchema,
   DeploymentStatusPayloadSchema,
   IssueCommentPayloadSchema,
+  InstallationPayloadSchema,
 } from '@preview-qa/schemas';
 import { verifyGitHubSignature } from '../lib/signature';
 import { enqueueEvent } from '../lib/servicebus';
@@ -129,6 +130,44 @@ export async function githubWebhookHandler(
       });
 
       context.log(`Enqueued issue_comment /qa command PR #${normalized.githubNumber} author=${normalized.authorLogin}`);
+      return { status: 202, body: 'Accepted' };
+    }
+
+    if (eventHeader === 'installation') {
+      const action = (parsed as Record<string, unknown>)?.['action'];
+      if (action !== 'created') return { status: 200, body: 'Event ignored' };
+
+      const result = InstallationPayloadSchema.safeParse(parsed);
+      if (!result.success) {
+        context.warn(`Installation payload parse failed: ${result.error.message}`);
+        return { status: 422, body: 'Unrecognised installation payload' };
+      }
+
+      const { installation, repositories } = result.data;
+
+      await enqueueEvent({
+        eventType: EventType.InstallationCreated,
+        installationId: String(installation.id),
+        repositoryId: String(installation.id),
+        payload: {
+          installationGithubId: installation.id,
+          accountLogin: installation.account.login,
+          accountType: installation.account.type,
+          ...(repositories !== undefined
+            ? {
+                repositories: repositories.map((r) => ({
+                  id: r.id,
+                  name: r.name,
+                  fullName: r.full_name,
+                  private: r.private,
+                })),
+              }
+            : {}),
+        },
+        correlationId: deliveryId,
+      });
+
+      context.log(`Enqueued installation.created for account=${installation.account.login}`);
       return { status: 202, body: 'Accepted' };
     }
 
