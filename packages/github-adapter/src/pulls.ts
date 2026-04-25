@@ -31,6 +31,32 @@ export async function postComment(
   return data.id;
 }
 
+export async function getPRChangedFiles(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  pullNumber: number,
+): Promise<string[]> {
+  const files: string[] = [];
+  let page = 1;
+  // GitHub paginates at 30 per page, cap at 3 pages (90 files) to stay cheap
+  while (page <= 3) {
+    const { data } = await octokit.pulls.listFiles({
+      owner,
+      repo,
+      pull_number: pullNumber,
+      per_page: 30,
+      page,
+    });
+    for (const f of data) {
+      files.push(f.filename);
+    }
+    if (data.length < 30) break;
+    page++;
+  }
+  return files;
+}
+
 export async function getPRMetadata(
   octokit: Octokit,
   owner: string,

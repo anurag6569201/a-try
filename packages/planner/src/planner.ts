@@ -5,6 +5,7 @@ import type { AzureOpenAIConfig } from '@preview-qa/ai';
 import type { ParsedStep } from '@preview-qa/parser';
 import { buildSmokeSteps } from './smokeSteps.js';
 import { normalizeSteps } from './normalizer.js';
+import { mapChangedFilesToRoutes, buildHeuristicSteps } from './heuristics.js';
 import type { PlannerInput, PlannerOutput, ResolvedTestCase } from './types.js';
 
 const DEFAULT_MAX_TEST_CASES = 20;
@@ -14,11 +15,20 @@ export async function buildPlan(
   input: PlannerInput,
   aiConfig?: AzureOpenAIConfig,
 ): Promise<PlannerOutput> {
-  const { runId, mode, previewUrl, parsedSteps, rawYaml, useAiNormalization } = input;
+  const { runId, mode, previewUrl, parsedSteps, rawYaml, useAiNormalization, changedFiles } = input;
   const maxTestCases = input.maxTestCases ?? DEFAULT_MAX_TEST_CASES;
 
   // Determine steps by mode
   const { parseOutcome, testCaseDefs } = resolveMode(mode, parsedSteps, previewUrl);
+
+  // Append heuristic test cases for changed Next.js routes
+  if (changedFiles && changedFiles.length > 0) {
+    const routes = mapChangedFilesToRoutes(changedFiles);
+    if (routes.length > 0) {
+      const heuristicSteps = buildHeuristicSteps(routes, previewUrl);
+      testCaseDefs.push({ name: 'Heuristic', steps: heuristicSteps, order: testCaseDefs.length });
+    }
+  }
 
   // Enforce max test cases cap
   const cappedDefs = testCaseDefs.slice(0, maxTestCases);

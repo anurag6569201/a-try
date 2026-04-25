@@ -2,7 +2,7 @@ import { RunState, RunMode, EventType, ArtifactKind, ParseOutcome } from '@previ
 import { createRun, cancelSupersededRuns, createAuditEvent, countActiveRunsForInstallation } from '@preview-qa/db';
 import type { Pool } from 'pg';
 import type { PullRequestEventEnvelope } from '@preview-qa/schemas';
-import { upsertStickyComment, getInstallationOctokit } from '@preview-qa/github-adapter';
+import { upsertStickyComment, getInstallationOctokit, getPRChangedFiles } from '@preview-qa/github-adapter';
 import { executeRun } from '@preview-qa/runner-playwright';
 import type { Step } from '@preview-qa/runner-playwright';
 import { BlobServiceClient } from '@azure/storage-blob';
@@ -186,6 +186,18 @@ export async function handlePullRequestEvent(
       if (!planningResult.success) return;
       await reportStateChange(reporterCtx, checkRunId, RunState.Planning);
 
+      // Fetch changed files for heuristic route detection (best-effort, skip on error)
+      let changedFiles: string[] | undefined;
+      if (!isFork) {
+        try {
+          const octokitForDiff = await getInstallationOctokit(config.github, Number(installationId));
+          changedFiles = await getPRChangedFiles(octokitForDiff, owner ?? '', repo ?? '', githubNumber);
+          runLog.info({ fileCount: changedFiles.length }, 'fetched PR changed files');
+        } catch (err) {
+          runLog.warn({ err }, 'failed to fetch PR changed files — heuristics skipped');
+        }
+      }
+
       // Build plan (persists to DB, resolves steps by mode)
       const parsedSteps = parseResult.outcome === ParseOutcome.Found ? parseResult.block.steps : null;
       const extracted = extractYamlBlock(prBody ?? null);
@@ -199,6 +211,7 @@ export async function handlePullRequestEvent(
         parsedSteps: planParsedSteps,
         rawYaml,
         ...(config.maxTestCasesPerPR !== undefined ? { maxTestCases: config.maxTestCasesPerPR } : {}),
+        ...(changedFiles !== undefined ? { changedFiles } : {}),
       });
       const steps = (testCases[0]?.steps ?? []) as Step[];
 
