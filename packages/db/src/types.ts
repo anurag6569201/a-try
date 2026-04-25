@@ -7,8 +7,28 @@ export interface Installation {
   account_type: string;
   tier: BillingTier;
   suspended_at: Date | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  billing_cycle_anchor: Date | null;
+  grace_period_ends_at: Date | null;
   created_at: Date;
   updated_at: Date;
+}
+
+export interface BillingEvent {
+  id: string;
+  installation_id: string | null;
+  stripe_event_id: string;
+  event_type: string;
+  payload: Record<string, unknown>;
+  processed_at: Date;
+}
+
+export interface UpsertBillingEventInput {
+  installationId: string | null;
+  stripeEventId: string;
+  eventType: string;
+  payload: Record<string, unknown>;
 }
 
 export interface PullRequest {

@@ -6,8 +6,9 @@
     "paths": {
       "@preview-qa/domain": ["../../packages/domain/src/index.ts"],
       "@preview-qa/schemas": ["../../packages/schemas/src/index.ts"],
-      "@preview-qa/observability": ["../../packages/observability/src/index.ts"]
+      "@preview-qa/observability": ["../../packages/observability/src/index.ts"],
+      "@preview-qa/db": ["../../packages/db/src/index.ts"]
     }
   },
-  "include": ["src", "../../packages/domain/src", "../../packages/schemas/src", "../../packages/observability/src"]
+  "include": ["src", "../../packages/domain/src", "../../packages/schemas/src", "../../packages/observability/src", "../../packages/db/src"]
 }

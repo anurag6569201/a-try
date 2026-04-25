@@ -14,6 +14,10 @@ const baseInstallation: Installation = {
   account_type: 'Organization',
   tier: BillingTier.Free,
   suspended_at: null,
+  stripe_customer_id: null,
+  stripe_subscription_id: null,
+  billing_cycle_anchor: null,
+  grace_period_ends_at: null,
   created_at: new Date('2024-01-01'),
   updated_at: new Date('2024-01-01'),
 };
