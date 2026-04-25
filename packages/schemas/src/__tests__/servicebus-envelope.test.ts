@@ -130,11 +130,11 @@ describe('IssueCommentEventEnvelopeSchema', () => {
       ...baseEnvelope,
       eventType: EventType.IssueCommentCreated,
       payload: {
-        pullRequestId: 'pr-1',
         githubNumber: 7,
         commentId: 123,
         body: '/qa rerun',
         authorLogin: 'dev',
+        repositoryFullName: 'acme/myapp',
       },
     });
     expect(result.success).toBe(true);
@@ -145,10 +145,10 @@ describe('IssueCommentEventEnvelopeSchema', () => {
       ...baseEnvelope,
       eventType: EventType.IssueCommentCreated,
       payload: {
-        pullRequestId: 'pr-1',
         githubNumber: 7,
         commentId: 123,
         authorLogin: 'dev',
+        repositoryFullName: 'acme/myapp',
       },
     });
     expect(result.success).toBe(false);
