@@ -15,7 +15,11 @@
     "@preview-qa/domain": "workspace:*",
     "@preview-qa/github-adapter": "workspace:*",
     "@preview-qa/schemas": "workspace:*",
+    "@azure/storage-blob": "^12.24.0",
+    "@preview-qa/reporter": "workspace:*",
+    "@preview-qa/runner-playwright": "workspace:*",
     "@preview-qa/vercel-adapter": "workspace:*",
+    "playwright": "^1.48.0",
     "pg": "^8.12.0"
   },
   "devDependencies": {

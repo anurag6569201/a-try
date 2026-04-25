@@ -22,6 +22,10 @@ function buildConfig(): OrchestratorConfig {
         ? { teamId: process.env['VERCEL_TEAM_ID'] }
         : {}),
     },
+    storage: {
+      connectionString: requireEnv('AZURE_STORAGE_CONNECTION_STRING'),
+      containerName: process.env['AZURE_BLOB_CONTAINER'] ?? 'artifacts',
+    },
   };
 }
 

@@ -1,11 +1,20 @@
-import { RunState, RunMode, EventType } from '@preview-qa/domain';
+import { RunState, RunMode, EventType, StepType, ArtifactKind } from '@preview-qa/domain';
 import { createRun, cancelSupersededRuns } from '@preview-qa/db';
 import type { Pool } from 'pg';
 import type { PullRequestEventEnvelope } from '@preview-qa/schemas';
+import { upsertStickyComment, getInstallationOctokit } from '@preview-qa/github-adapter';
+import { executeRun } from '@preview-qa/runner-playwright';
+import type { Step } from '@preview-qa/runner-playwright';
+import { BlobServiceClient } from '@azure/storage-blob';
+import { formatPRComment, formatCheckBody } from '@preview-qa/reporter';
+import type { ReportArtifact } from '@preview-qa/reporter';
 import { transition } from '../statemachine.js';
-import { createInitialCheck, reportStateChange } from '../github-reporter.js';
+import { createInitialCheck, reportStateChange, reportStateChangeWithBody } from '../github-reporter.js';
 import { pollForPreview } from '../preview-poller.js';
 import type { OrchestratorConfig } from '../types.js';
+import os from 'os';
+import path from 'path';
+import fs from 'fs';
 
 export async function handlePullRequestEvent(
   pool: Pool,
@@ -18,17 +27,18 @@ export async function handlePullRequestEvent(
     return;
   }
 
-  const { pullRequestId, sha, githubNumber: _githubNumber, owner, repo, vercelProjectId, mode } = payload as typeof payload & {
+  const extended = payload as typeof payload & {
     owner: string;
     repo: string;
     vercelProjectId?: string;
     mode?: RunMode;
+    githubNumber: number;
   };
 
-  // Cancel any active runs for older SHAs on this PR
+  const { pullRequestId, sha, owner, repo, vercelProjectId, mode, githubNumber } = extended;
+
   await cancelSupersededRuns(pool, pullRequestId, sha);
 
-  // Create a new run record
   const run = await createRun(pool, {
     pull_request_id: pullRequestId,
     repository_id: repositoryId,
@@ -46,7 +56,6 @@ export async function handlePullRequestEvent(
     sha,
   };
 
-  // Create initial GitHub Check
   let checkRunId: number;
   try {
     checkRunId = await createInitialCheck(reporterCtx, run.id);
@@ -60,77 +69,162 @@ export async function handlePullRequestEvent(
     return;
   }
 
-  // Poll for Vercel preview
-  if (!vercelProjectId) {
-    // No Vercel project configured — skip polling, go straight to planning
-    await advanceToPlanning(pool, config, reporterCtx, run.id, checkRunId, undefined);
-    return;
+  // Poll for preview
+  let resolvedPreviewUrl: string | undefined;
+
+  if (vercelProjectId) {
+    const pollResult = await pollForPreview(
+      {
+        apiToken: config.vercel.apiToken,
+        ...(config.vercel.teamId !== undefined ? { teamId: config.vercel.teamId } : {}),
+      },
+      vercelProjectId,
+      sha,
+    );
+
+    if (pollResult.status === 'timeout') {
+      await transition(pool, run.id, RunState.WaitingForPreview, RunState.BlockedEnvironment);
+      await reportStateChange(reporterCtx, checkRunId, RunState.BlockedEnvironment);
+      return;
+    }
+
+    if (pollResult.status === 'error') {
+      console.error(`[${run.id}] Preview poll error: ${pollResult.message}`);
+      await transition(pool, run.id, RunState.WaitingForPreview, RunState.Failed);
+      await reportStateChange(reporterCtx, checkRunId, RunState.Failed);
+      return;
+    }
+
+    resolvedPreviewUrl = pollResult.url;
   }
 
-  const pollResult = await pollForPreview(
-    { apiToken: config.vercel.apiToken, ...(config.vercel.teamId !== undefined ? { teamId: config.vercel.teamId } : {}) },
-    vercelProjectId,
-    sha,
-  );
-
-  if (pollResult.status === 'timeout') {
-    await transition(pool, run.id, RunState.WaitingForPreview, RunState.BlockedEnvironment);
-    await reportStateChange(reporterCtx, checkRunId, RunState.BlockedEnvironment);
-    return;
-  }
-
-  if (pollResult.status === 'error') {
-    console.error(`[${run.id}] Preview poll error: ${pollResult.message}`);
-    await transition(pool, run.id, RunState.WaitingForPreview, RunState.Failed);
-    await reportStateChange(reporterCtx, checkRunId, RunState.Failed);
-    return;
-  }
-
-  await advanceToPlanning(pool, config, reporterCtx, run.id, checkRunId, pollResult.url);
-}
-
-async function advanceToPlanning(
-  pool: Pool,
-  _config: OrchestratorConfig,
-  reporterCtx: Parameters<typeof reportStateChange>[0],
-  runId: string,
-  checkRunId: number,
-  previewUrl: string | undefined,
-): Promise<void> {
+  // Advance to Planning
   const planningResult = await transition(
     pool,
-    runId,
+    run.id,
     RunState.WaitingForPreview,
     RunState.Planning,
-    previewUrl !== undefined ? { previewUrl } : {},
+    resolvedPreviewUrl !== undefined ? { previewUrl: resolvedPreviewUrl } : {},
   );
-
-  if (!planningResult.success) {
-    // Run was likely canceled by a newer push — nothing to do
-    return;
-  }
-
+  if (!planningResult.success) return;
   await reportStateChange(reporterCtx, checkRunId, RunState.Planning);
 
-  // Sprint 1.4 will wire in actual planning + running.
-  // For now, immediately mark as completed to close the GitHub check.
-  const runningResult = await transition(pool, runId, RunState.Planning, RunState.Running);
+  // Advance to Running
+  const runningResult = await transition(pool, run.id, RunState.Planning, RunState.Running);
   if (!runningResult.success) return;
   await reportStateChange(reporterCtx, checkRunId, RunState.Running);
 
-  const analyzingResult = await transition(pool, runId, RunState.Running, RunState.Analyzing, {
+  // Execute Playwright steps
+  const steps = buildSmokeSteps(resolvedPreviewUrl);
+  const outputDir = path.join(os.tmpdir(), `run-${run.id}`);
+  const runnerResult = await executeRun({
+    previewUrl: resolvedPreviewUrl ?? '',
+    steps,
+    outputDir,
+  });
+
+  // Upload artifacts
+  const artifacts = await uploadRunArtifacts(config, run.id, runnerResult, outputDir);
+
+  // Cleanup temp dir
+  try {
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  } catch {
+    // best-effort
+  }
+
+  // Advance to Analyzing
+  const analyzingResult = await transition(pool, run.id, RunState.Running, RunState.Analyzing, {
     startedAt: new Date(),
   });
   if (!analyzingResult.success) return;
   await reportStateChange(reporterCtx, checkRunId, RunState.Analyzing);
 
-  const reportingResult = await transition(pool, runId, RunState.Analyzing, RunState.Reporting);
+  // Advance to Reporting
+  const reportingResult = await transition(pool, run.id, RunState.Analyzing, RunState.Reporting);
   if (!reportingResult.success) return;
   await reportStateChange(reporterCtx, checkRunId, RunState.Reporting);
 
-  const completedResult = await transition(pool, runId, RunState.Reporting, RunState.Completed, {
+  // Format and post PR comment + update Check with result body
+  const report = {
+    runId: run.id,
+    outcome: runnerResult.outcome,
+    durationMs: runnerResult.durationMs,
+    ...(resolvedPreviewUrl !== undefined ? { previewUrl: resolvedPreviewUrl } : {}),
+    sha,
+    steps: runnerResult.steps,
+    artifacts,
+  };
+
+  try {
+    const octokit = await getInstallationOctokit(config.github, Number(installationId));
+    await upsertStickyComment(octokit, {
+      owner: owner ?? '',
+      repo: repo ?? '',
+      pullNumber: githubNumber,
+      body: formatPRComment(report),
+    });
+  } catch (err) {
+    console.error(`[${run.id}] Failed to post PR comment:`, err);
+  }
+
+  const finalState = runnerResult.outcome === 'pass' ? RunState.Completed : RunState.Failed;
+  const completedResult = await transition(pool, run.id, RunState.Reporting, finalState, {
     completedAt: new Date(),
   });
   if (!completedResult.success) return;
-  await reportStateChange(reporterCtx, checkRunId, RunState.Completed);
+
+  await reportStateChangeWithBody(reporterCtx, checkRunId, finalState, formatCheckBody(report));
+}
+
+function buildSmokeSteps(previewUrl: string | undefined): Step[] {
+  const url = previewUrl ?? '';
+  return [
+    { type: StepType.Navigate, url },
+    { type: StepType.Assert200, url },
+    { type: StepType.Screenshot, label: 'home' },
+  ];
+}
+
+async function uploadRunArtifacts(
+  config: OrchestratorConfig,
+  runId: string,
+  runnerResult: Awaited<ReturnType<typeof executeRun>>,
+  outputDir: string,
+): Promise<ReportArtifact[]> {
+  const toUpload: Array<{ localPath: string; kind: ArtifactKind }> = [];
+
+  for (const step of runnerResult.steps) {
+    if (step.screenshotPath) {
+      toUpload.push({ localPath: step.screenshotPath, kind: ArtifactKind.Screenshot });
+    }
+  }
+  if (runnerResult.errorScreenshotPath) {
+    toUpload.push({ localPath: runnerResult.errorScreenshotPath, kind: ArtifactKind.Screenshot });
+  }
+  if (runnerResult.tracePath) {
+    toUpload.push({ localPath: runnerResult.tracePath, kind: ArtifactKind.Trace });
+  }
+
+  if (toUpload.length === 0) return [];
+
+  const blobClient = BlobServiceClient.fromConnectionString(config.storage.connectionString);
+  const container = blobClient.getContainerClient(config.storage.containerName);
+
+  const results = await Promise.all(
+    toUpload.map(async ({ localPath, kind }) => {
+      const filename = path.basename(localPath);
+      const blobName = `runs/${runId}/${filename}`;
+      const block = container.getBlockBlobClient(blobName);
+      await block.uploadFile(localPath, {
+        blobHTTPHeaders: {
+          blobContentType: localPath.endsWith('.png') ? 'image/png' : 'application/zip',
+        },
+      });
+      return { kind, blobUrl: block.url, filename } satisfies ReportArtifact;
+    }),
+  );
+
+  void outputDir; // used by caller for cleanup
+  return results;
 }

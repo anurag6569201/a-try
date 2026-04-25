@@ -38,6 +38,7 @@ const baseConfig = {
   dbConnectionString: 'postgresql://localhost/test',
   github: { appId: 1, privateKey: 'key' },
   vercel: { apiToken: 'tok' },
+  storage: { connectionString: 'DefaultEndpointsProtocol=https;AccountName=test;AccountKey=key=;EndpointSuffix=core.windows.net', containerName: 'artifacts' },
 };
 
 const basePrEnvelope = {
