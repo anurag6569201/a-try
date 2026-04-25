@@ -39,6 +39,21 @@ function buildConfig(): OrchestratorConfig {
     ...(process.env['RERUN_RATE_LIMIT_PER_HOUR'] !== undefined
       ? { rerunRateLimitPerHour: Number(process.env['RERUN_RATE_LIMIT_PER_HOUR']) }
       : {}),
+    ...(process.env['AZURE_OPENAI_ENDPOINT'] !== undefined &&
+      process.env['AZURE_OPENAI_API_KEY'] !== undefined
+      ? {
+          ai: {
+            endpoint: process.env['AZURE_OPENAI_ENDPOINT'],
+            apiKey: process.env['AZURE_OPENAI_API_KEY'],
+            deployments: {
+              planNormalizer: process.env['AZURE_OPENAI_DEPLOY_PLAN_NORMALIZER'] ?? 'plan-normalizer',
+              failureSummarizer: process.env['AZURE_OPENAI_DEPLOY_FAILURE_SUMMARIZER'] ?? 'failure-summarizer',
+              riskClassifier: process.env['AZURE_OPENAI_DEPLOY_RISK_CLASSIFIER'] ?? 'risk-classifier',
+              planSuggester: process.env['AZURE_OPENAI_DEPLOY_PLAN_SUGGESTER'] ?? 'plan-suggester',
+            },
+          },
+        }
+      : {}),
   };
 }
 

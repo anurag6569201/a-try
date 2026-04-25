@@ -9,8 +9,9 @@ import { BlobServiceClient } from '@azure/storage-blob';
 import { formatPRComment, formatCheckBody } from '@preview-qa/reporter';
 import type { ReportArtifact } from '@preview-qa/reporter';
 import { parsePRBody, formatParseErrors, extractYamlBlock } from '@preview-qa/parser';
-import { buildPlan } from '@preview-qa/planner';
+import { buildPlan, suggestMissingCoverage, formatSuggestionComment } from '@preview-qa/planner';
 import { createLogger, getTracer, withSpan } from '@preview-qa/observability';
+import { createAzureOpenAIClient } from '@preview-qa/ai';
 import { transition } from '../statemachine.js';
 import { createInitialCheck, reportStateChange, reportStateChangeWithBody } from '../github-reporter.js';
 import { pollForPreview } from '../preview-poller.js';
@@ -214,6 +215,36 @@ export async function handlePullRequestEvent(
         ...(changedFiles !== undefined ? { changedFiles } : {}),
       });
       const steps = (testCases[0]?.steps ?? []) as Step[];
+
+      // AI plan suggestions (informational, non-blocking, only when AI is configured and files changed)
+      if (config.ai && changedFiles && changedFiles.length > 0 && !isFork) {
+        const allSteps = testCases.flatMap((tc) => tc.steps);
+        void (async () => {
+          try {
+            const aiClient = createAzureOpenAIClient(config.ai!);
+            const suggestions = await suggestMissingCoverage(aiClient, pool, {
+              runId: run.id,
+              changedFiles,
+              existingSteps: allSteps,
+              previewUrl: resolvedPreviewUrl ?? '',
+              deployment: config.ai!.deployments.planSuggester,
+            });
+            const body = formatSuggestionComment(suggestions);
+            if (body) {
+              const octokit = await getInstallationOctokit(config.github, Number(installationId));
+              await octokit.issues.createComment({
+                owner: owner ?? '',
+                repo: repo ?? '',
+                issue_number: githubNumber,
+                body,
+              });
+              runLog.info({ suggestionCount: suggestions.length }, 'posted AI plan suggestions');
+            }
+          } catch (err) {
+            runLog.warn({ err }, 'AI plan suggestion failed — skipped');
+          }
+        })();
+      }
 
       // Advance to Running
       const runningResult = await transition(pool, run.id, RunState.Planning, RunState.Running);

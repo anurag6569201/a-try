@@ -7,6 +7,7 @@ export interface AzureOpenAIConfig {
     planNormalizer: string;
     failureSummarizer: string;
     riskClassifier: string;
+    planSuggester: string;
   };
 }
 
@@ -50,6 +51,22 @@ export interface RiskClassifierOutput {
   category: FailureCategory;
   confidence: 'high' | 'medium' | 'low';
   reasoning: string;
+}
+
+export interface PlanSuggesterInput {
+  changedFiles: string[];
+  existingSteps: Array<{ type: string; url?: string; selector?: string; label?: string }>;
+  previewUrl: string;
+}
+
+export interface PlanSuggestion {
+  route: string;
+  reason: string;
+  stepType: string;
+}
+
+export interface PlanSuggesterOutput {
+  suggestions: PlanSuggestion[];
 }
 
 export interface ModelTraceRow {
