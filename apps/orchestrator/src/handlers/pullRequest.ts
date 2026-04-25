@@ -1,4 +1,4 @@
-import { RunState, RunMode, EventType, StepType, ArtifactKind, ParseOutcome } from '@preview-qa/domain';
+import { RunState, RunMode, EventType, ArtifactKind, ParseOutcome } from '@preview-qa/domain';
 import { createRun, cancelSupersededRuns } from '@preview-qa/db';
 import type { Pool } from 'pg';
 import type { PullRequestEventEnvelope } from '@preview-qa/schemas';
@@ -8,7 +8,8 @@ import type { Step } from '@preview-qa/runner-playwright';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { formatPRComment, formatCheckBody } from '@preview-qa/reporter';
 import type { ReportArtifact } from '@preview-qa/reporter';
-import { parsePRBody, formatParseErrors } from '@preview-qa/parser';
+import { parsePRBody, formatParseErrors, extractYamlBlock } from '@preview-qa/parser';
+import { buildPlan } from '@preview-qa/planner';
 import { transition } from '../statemachine.js';
 import { createInitialCheck, reportStateChange, reportStateChangeWithBody } from '../github-reporter.js';
 import { pollForPreview } from '../preview-poller.js';
@@ -130,13 +131,23 @@ export async function handlePullRequestEvent(
   if (!planningResult.success) return;
   await reportStateChange(reporterCtx, checkRunId, RunState.Planning);
 
+  // Build plan (persists to DB, resolves steps by mode)
+  const parsedSteps = parseResult.outcome === ParseOutcome.Found ? parseResult.block.steps : null;
+  const extracted = extractYamlBlock(prBody ?? null);
+  const rawYaml = extracted.found ? extracted.yaml : null;
+  const { testCases } = await buildPlan(pool, {
+    runId: run.id,
+    mode: mode ?? RunMode.Smoke,
+    previewUrl: resolvedPreviewUrl ?? '',
+    parsedSteps: parsedSteps as never,
+    rawYaml,
+  });
+  const steps = (testCases[0]?.steps ?? []) as Step[];
+
   // Advance to Running
   const runningResult = await transition(pool, run.id, RunState.Planning, RunState.Running);
   if (!runningResult.success) return;
   await reportStateChange(reporterCtx, checkRunId, RunState.Running);
-
-  // Resolve steps: instruction block → explicit steps, otherwise smoke
-  const steps = resolveSteps(parseResult, resolvedPreviewUrl);
 
   const outputDir = path.join(os.tmpdir(), `run-${run.id}`);
   const runnerResult = await executeRun({
@@ -196,26 +207,6 @@ export async function handlePullRequestEvent(
   if (!completedResult.success) return;
 
   await reportStateChangeWithBody(reporterCtx, checkRunId, finalState, formatCheckBody(report));
-}
-
-function resolveSteps(
-  parseResult: ReturnType<typeof parsePRBody>,
-  previewUrl: string | undefined,
-): Step[] {
-  if (parseResult.outcome === ParseOutcome.Found) {
-    return parseResult.block.steps as Step[];
-  }
-  // not_found or error → smoke
-  return buildSmokeSteps(previewUrl);
-}
-
-function buildSmokeSteps(previewUrl: string | undefined): Step[] {
-  const url = previewUrl ?? '';
-  return [
-    { type: StepType.Navigate, url },
-    { type: StepType.Assert200, url },
-    { type: StepType.Screenshot, label: 'home' },
-  ];
 }
 
 async function uploadRunArtifacts(

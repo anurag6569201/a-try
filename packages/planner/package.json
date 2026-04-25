@@ -2,16 +2,24 @@
   "name": "@preview-qa/planner",
   "version": "0.0.0",
   "private": true,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/packages/planner/src/index.js",
+  "types": "./dist/packages/planner/src/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"no tests yet\""
+    "test": "vitest run"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@preview-qa/ai": "workspace:*",
+    "@preview-qa/db": "workspace:*",
+    "@preview-qa/domain": "workspace:*",
+    "@preview-qa/parser": "workspace:*",
+    "pg": "^8.12.0"
+  },
   "devDependencies": {
-    "typescript": "*"
+    "@types/pg": "^8.11.0",
+    "typescript": "*",
+    "vitest": "^2.0.0"
   }
 }

@@ -72,6 +72,9 @@ importers:
       '@preview-qa/parser':
         specifier: workspace:*
         version: link:../../packages/parser
+      '@preview-qa/planner':
+        specifier: workspace:*
+        version: link:../../packages/planner
       '@preview-qa/reporter':
         specifier: workspace:*
         version: link:../../packages/reporter
@@ -221,10 +224,32 @@ importers:
         version: 2.1.9(@types/node@25.6.0)
 
   packages/planner:
+    dependencies:
+      '@preview-qa/ai':
+        specifier: workspace:*
+        version: link:../ai
+      '@preview-qa/db':
+        specifier: workspace:*
+        version: link:../db
+      '@preview-qa/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@preview-qa/parser':
+        specifier: workspace:*
+        version: link:../parser
+      pg:
+        specifier: ^8.12.0
+        version: 8.20.0
     devDependencies:
+      '@types/pg':
+        specifier: ^8.11.0
+        version: 8.20.0
       typescript:
         specifier: '*'
         version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@25.6.0)
 
   packages/reporter:
     dependencies:
@@ -771,13 +796,14 @@ packages:
   '@types/is-buffer@2.0.2':
     resolution: {integrity: sha512-G6OXy83Va+xEo8XgqAJYOuvOMxeey9xM5XKkvwJNmN8rVdcB+r15HvHsG86hl86JvU0y1aa7Z2ERkNFYWw9ySg==}
 
+  '@types/js-yaml@4.0.9':
+    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
+
   '@types/node-fetch@2.6.13':
     resolution: {integrity: sha512-QGpRVpzSaUs30JBSGPjOg4Uveu384erbHBoT1zeONvyCfwQxIkUshLAOqN/k9EjGviPRmWTTe6aH2qySWKTVSw==}
 
   '@types/node@18.19.130':
     resolution: {integrity: sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg==}
-  '@types/js-yaml@4.0.9':
-    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
 
   '@types/node@20.19.39':
     resolution: {integrity: sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw==}
@@ -2383,6 +2409,8 @@ snapshots:
     dependencies:
       '@types/node': 20.19.39
 
+  '@types/js-yaml@4.0.9': {}
+
   '@types/node-fetch@2.6.13':
     dependencies:
       '@types/node': 20.19.39
@@ -2391,7 +2419,6 @@ snapshots:
   '@types/node@18.19.130':
     dependencies:
       undici-types: 5.26.5
-  '@types/js-yaml@4.0.9': {}
 
   '@types/node@20.19.39':
     dependencies:
