@@ -12,6 +12,10 @@ export interface OrchestratorConfig {
     apiToken: string;
     teamId?: string;
   };
+  storage: {
+    connectionString: string;
+    containerName: string;
+  };
 }
 
 export interface PREventPayload {

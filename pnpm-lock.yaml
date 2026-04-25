@@ -57,6 +57,9 @@ importers:
       '@azure/service-bus':
         specifier: ^7.9.0
         version: 7.9.5
+      '@azure/storage-blob':
+        specifier: ^12.24.0
+        version: 12.31.0
       '@preview-qa/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -66,6 +69,12 @@ importers:
       '@preview-qa/github-adapter':
         specifier: workspace:*
         version: link:../../packages/github-adapter
+      '@preview-qa/reporter':
+        specifier: workspace:*
+        version: link:../../packages/reporter
+      '@preview-qa/runner-playwright':
+        specifier: workspace:*
+        version: link:../../packages/runner-playwright
       '@preview-qa/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
@@ -75,6 +84,9 @@ importers:
       pg:
         specifier: ^8.12.0
         version: 8.20.0
+      playwright:
+        specifier: ^1.48.0
+        version: 1.59.1
     devDependencies:
       '@types/pg':
         specifier: ^8.11.0
@@ -180,10 +192,20 @@ importers:
         version: 5.9.3
 
   packages/reporter:
+    dependencies:
+      '@preview-qa/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@preview-qa/runner-playwright':
+        specifier: workspace:*
+        version: link:../runner-playwright
     devDependencies:
       typescript:
         specifier: '*'
         version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@25.6.0)
 
   packages/runner-playwright:
     dependencies:

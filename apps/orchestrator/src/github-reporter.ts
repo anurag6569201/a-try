@@ -86,6 +86,15 @@ export async function reportStateChange(
   checkRunId: number,
   state: RunState,
 ): Promise<void> {
+  await reportStateChangeWithBody(ctx, checkRunId, state, undefined);
+}
+
+export async function reportStateChangeWithBody(
+  ctx: ReporterContext,
+  checkRunId: number,
+  state: RunState,
+  body: string | undefined,
+): Promise<void> {
   const octokit = await getInstallationOctokit(ctx.config, ctx.installationId);
   const { status, conclusion } = stateToCheckStatus(state);
   const summary = stateToSummary(state);
@@ -101,6 +110,7 @@ export async function reportStateChange(
     output: {
       title: 'Preview QA',
       summary,
+      ...(body !== undefined ? { text: body } : {}),
     },
   });
 }
