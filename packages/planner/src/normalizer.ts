@@ -3,6 +3,7 @@ import type { AzureOpenAIConfig } from '@preview-qa/ai';
 import { createAzureOpenAIClient, runPlanNormalizer } from '@preview-qa/ai';
 import type { ParsedStep } from '@preview-qa/parser';
 import type { Pool } from 'pg';
+import { sanitizeForLlm } from './sanitize.js';
 
 // Steps that benefit from AI selector normalization
 const NORMALIZABLE_TYPES = new Set<StepType>([
@@ -36,7 +37,7 @@ export async function normalizeSteps(
           aiConfig.deployments.planNormalizer,
           {
             stepType: step.type,
-            rawInstruction: selector,
+            rawInstruction: sanitizeForLlm(selector),
             previewUrl,
           },
           { runId, promptName: `plan_normalizer_step_${i}` },
