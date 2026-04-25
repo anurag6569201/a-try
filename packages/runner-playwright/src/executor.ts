@@ -8,12 +8,14 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const STEP_TIMEOUT_MS = 10_000;
 
 export async function executeRun(input: RunnerInput): Promise<RunnerResult> {
-  const { steps, outputDir, timeoutMs = DEFAULT_TIMEOUT_MS } = input;
+  const { steps, outputDir, timeoutMs = DEFAULT_TIMEOUT_MS, storageStatePath } = input;
 
   fs.mkdirSync(outputDir, { recursive: true });
 
   const browser = await chromium.launch();
-  const context = await browser.newContext();
+  const context = await browser.newContext(
+    storageStatePath !== undefined ? { storageState: storageStatePath } : {},
+  );
 
   await context.tracing.start({ screenshots: true, snapshots: true });
 

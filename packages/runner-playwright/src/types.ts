@@ -29,4 +29,5 @@ export interface RunnerInput {
   steps: Step[];
   outputDir: string;
   timeoutMs?: number;
+  storageStatePath?: string;
 }

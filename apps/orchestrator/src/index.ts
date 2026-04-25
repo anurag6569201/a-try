@@ -26,6 +26,9 @@ function buildConfig(): OrchestratorConfig {
       connectionString: requireEnv('AZURE_STORAGE_CONNECTION_STRING'),
       containerName: process.env['AZURE_BLOB_CONTAINER'] ?? 'artifacts',
     },
+    ...(process.env['AZURE_KEY_VAULT_URL'] !== undefined
+      ? { keyVaultUrl: process.env['AZURE_KEY_VAULT_URL'] }
+      : {}),
   };
 }
 

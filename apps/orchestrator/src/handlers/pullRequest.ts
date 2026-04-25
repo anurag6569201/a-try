@@ -13,6 +13,7 @@ import { buildPlan } from '@preview-qa/planner';
 import { transition } from '../statemachine.js';
 import { createInitialCheck, reportStateChange, reportStateChangeWithBody } from '../github-reporter.js';
 import { pollForPreview } from '../preview-poller.js';
+import { resolveStorageState } from '../loginProfile.js';
 import type { OrchestratorConfig } from '../types.js';
 import os from 'os';
 import path from 'path';
@@ -149,11 +150,23 @@ export async function handlePullRequestEvent(
   if (!runningResult.success) return;
   await reportStateChange(reporterCtx, checkRunId, RunState.Running);
 
+  // Resolve login profile storage state if specified
+  let storageStatePath: string | undefined;
+  const loginProfile = parseResult.outcome === ParseOutcome.Found ? parseResult.block.login : undefined;
+  if (loginProfile !== undefined && config.keyVaultUrl !== undefined) {
+    try {
+      storageStatePath = await resolveStorageState(config.keyVaultUrl, loginProfile, run.id);
+    } catch (err) {
+      console.error(`[${run.id}] Failed to resolve login profile '${loginProfile}':`, err);
+    }
+  }
+
   const outputDir = path.join(os.tmpdir(), `run-${run.id}`);
   const runnerResult = await executeRun({
     previewUrl: resolvedPreviewUrl ?? '',
     steps,
     outputDir,
+    ...(storageStatePath !== undefined ? { storageStatePath } : {}),
   });
 
   // Upload artifacts

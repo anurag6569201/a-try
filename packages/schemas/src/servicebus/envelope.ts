@@ -50,11 +50,11 @@ export const DeploymentStatusEventEnvelopeSchema = ServiceBusEnvelopeSchema.exte
 export const IssueCommentEventEnvelopeSchema = ServiceBusEnvelopeSchema.extend({
   eventType: z.literal(EventType.IssueCommentCreated),
   payload: z.object({
-    pullRequestId: z.string(),
     githubNumber: z.number(),
     commentId: z.number(),
     body: z.string(),
     authorLogin: z.string(),
+    repositoryFullName: z.string(),
   }),
 });
 

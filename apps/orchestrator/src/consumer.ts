@@ -1,8 +1,9 @@
 import { ServiceBusClient, ServiceBusReceiver } from '@azure/service-bus';
 import { Pool } from 'pg';
 import { EventType } from '@preview-qa/domain';
-import { ServiceBusEnvelopeSchema, PullRequestEventEnvelopeSchema } from '@preview-qa/schemas';
+import { ServiceBusEnvelopeSchema, PullRequestEventEnvelopeSchema, IssueCommentEventEnvelopeSchema } from '@preview-qa/schemas';
 import { handlePullRequestEvent } from './handlers/pullRequest.js';
+import { handleIssueCommentEvent } from './handlers/issueComment.js';
 import type { OrchestratorConfig } from './types.js';
 
 export class OrchestratorConsumer {
@@ -63,6 +64,12 @@ export class OrchestratorConsumer {
 
     if (eventType === EventType.DeploymentStatusCreated) {
       // Deployment status events are informational in the current sprint
+      return;
+    }
+
+    if (eventType === EventType.IssueCommentCreated) {
+      const parsed = IssueCommentEventEnvelopeSchema.parse(raw);
+      await handleIssueCommentEvent(this.pool, this.config, parsed);
       return;
     }
 

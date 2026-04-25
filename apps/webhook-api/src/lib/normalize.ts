@@ -1,6 +1,7 @@
 import type {
   PullRequestWebhookPayload,
   DeploymentStatusPayload,
+  IssueCommentPayload,
 } from '@preview-qa/schemas';
 
 export interface NormalizedPRPayload {
@@ -53,5 +54,31 @@ export function normalizeDeploymentPayload(
     environmentUrl: payload.deployment_status.environment_url,
     repositoryGithubId: payload.repository.id,
     installationGithubId: payload.installation.id,
+  };
+}
+
+export interface NormalizedIssueCommentPayload {
+  githubNumber: number;
+  commentId: number;
+  body: string;
+  authorLogin: string;
+  repositoryGithubId: number;
+  repositoryFullName: string;
+  installationGithubId: number;
+  isPullRequest: boolean;
+}
+
+export function normalizeIssueCommentPayload(
+  payload: IssueCommentPayload,
+): NormalizedIssueCommentPayload {
+  return {
+    githubNumber: payload.issue.number,
+    commentId: payload.comment.id,
+    body: payload.comment.body,
+    authorLogin: payload.comment.user.login,
+    repositoryGithubId: payload.repository.id,
+    repositoryFullName: payload.repository.full_name,
+    installationGithubId: payload.installation.id,
+    isPullRequest: payload.issue.pull_request !== undefined,
   };
 }
