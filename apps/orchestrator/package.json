@@ -6,10 +6,21 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"no tests yet\""
+    "test": "vitest run",
+    "start": "node dist/apps/orchestrator/src/index.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@azure/service-bus": "^7.9.0",
+    "@preview-qa/db": "workspace:*",
+    "@preview-qa/domain": "workspace:*",
+    "@preview-qa/github-adapter": "workspace:*",
+    "@preview-qa/schemas": "workspace:*",
+    "@preview-qa/vercel-adapter": "workspace:*",
+    "pg": "^8.12.0"
+  },
   "devDependencies": {
-    "typescript": "*"
+    "@types/pg": "^8.11.0",
+    "typescript": "*",
+    "vitest": "^2.0.0"
   }
 }
