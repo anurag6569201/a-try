@@ -2,14 +2,23 @@
   "name": "@preview-qa/webhook-api",
   "version": "0.0.0",
   "private": true,
+  "main": "dist/src/functions/*.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"no tests yet\""
+    "test": "vitest run",
+    "start": "func start"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@azure/functions": "^4.5.0",
+    "@azure/service-bus": "^7.9.0",
+    "@preview-qa/domain": "workspace:*",
+    "@preview-qa/schemas": "workspace:*"
+  },
   "devDependencies": {
-    "typescript": "*"
+    "@types/node": "^20.0.0",
+    "typescript": "*",
+    "vitest": "^2.0.0"
   }
 }
