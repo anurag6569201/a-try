@@ -38,6 +38,8 @@ app.post('/github', async (c) => {
   const sig = c.req.header('x-hub-signature-256') ?? '';
   const event = c.req.header('x-github-event') ?? '';
 
+  console.log(`GitHub webhook event=${event}`);
+
   if (WEBHOOK_SECRET && !(await verifySignature(body, sig))) {
     return c.json({ error: 'invalid signature' }, 401);
   }
@@ -56,6 +58,8 @@ app.post('/github', async (c) => {
 
   // PR opened / synchronize → create a run
   if (event === 'pull_request') {
+    const action = (payload['action'] as string) ?? 'unknown';
+    console.log(`PR webhook action=${action}`);
     await handlePullRequest(pool, payload);
     return c.json({ ok: true });
   }
