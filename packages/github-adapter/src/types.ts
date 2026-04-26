@@ -55,3 +55,29 @@ export interface PRMetadata {
   isDraft: boolean;
   state: string;
 }
+
+export interface ChangedFileDetail {
+  filename: string;
+  status: 'added' | 'modified' | 'removed' | 'renamed' | 'copied' | 'changed' | 'unchanged';
+  additions: number;
+  deletions: number;
+  patch: string | undefined;
+}
+
+export interface InlineReviewComment {
+  path: string;
+  line: number;
+  side?: 'LEFT' | 'RIGHT';
+  body: string;
+}
+
+export interface CreateReviewInput {
+  owner: string;
+  repo: string;
+  pullNumber: number;
+  commitId: string;
+  body: string;
+  /** 'COMMENT' posts without approval. Use 'REQUEST_CHANGES' only for block-severity findings. */
+  event: 'COMMENT' | 'REQUEST_CHANGES' | 'APPROVE';
+  comments: InlineReviewComment[];
+}

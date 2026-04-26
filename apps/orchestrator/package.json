@@ -25,6 +25,7 @@
     "@preview-qa/onboarding": "workspace:*",
     "@preview-qa/runner-playwright": "workspace:*",
     "@preview-qa/vercel-adapter": "workspace:*",
+    "@preview-qa/code-reviewer": "workspace:*",
     "playwright": "^1.48.0",
     "pg": "^8.12.0"
   },
