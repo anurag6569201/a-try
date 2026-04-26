@@ -1,9 +1,27 @@
 import { Hono } from 'hono';
 import { getPool } from '@preview-qa/db';
+import { ServiceBusClient } from '@azure/service-bus';
+import { EventType } from '@preview-qa/domain';
+import type { ServiceBusEnvelope } from '@preview-qa/schemas';
+import { randomUUID } from 'crypto';
 
 const app = new Hono();
 
 const WEBHOOK_SECRET = process.env['GITHUB_WEBHOOK_SECRET'] ?? '';
+const SB_CONNECTION_STRING = process.env['AZURE_SERVICE_BUS_CONNECTION_STRING'] ?? '';
+const SB_QUEUE_NAME = process.env['AZURE_SERVICE_BUS_QUEUE_NAME'] ?? 'run-jobs';
+
+async function enqueueEvent(envelope: ServiceBusEnvelope): Promise<void> {
+  if (!SB_CONNECTION_STRING) return;
+  const client = new ServiceBusClient(SB_CONNECTION_STRING);
+  const sender = client.createSender(SB_QUEUE_NAME);
+  try {
+    await sender.sendMessages({ body: envelope, messageId: envelope.messageId });
+  } finally {
+    await sender.close();
+    await client.close();
+  }
+}
 
 async function verifySignature(body: string, signature: string): Promise<boolean> {
   const encoder = new TextEncoder();
@@ -133,6 +151,36 @@ async function handlePullRequest(pool: ReturnType<typeof getPool>, payload: Reco
      VALUES ($1, $2, $3, $4, 'smoke', 'queued', $5)`,
     [pullRequest.id, repository.id, installation.id, pr.head.sha, action === 'opened' ? 'pr.opened' : 'pr.synchronize'],
   );
+
+  const eventTypeMap: Record<string, EventType> = {
+    opened: EventType.PullRequestOpened,
+    synchronize: EventType.PullRequestSynchronize,
+    reopened: EventType.PullRequestReopened,
+    closed: EventType.PullRequestClosed,
+  };
+  const eventType = eventTypeMap[action] ?? EventType.PullRequestOpened;
+
+  const isFork = (payload['pull_request'] as { head: { repo: { fork: boolean } } })?.head?.repo?.fork ?? false;
+
+  await enqueueEvent({
+    messageId: randomUUID(),
+    correlationId: randomUUID(),
+    eventType,
+    installationId: installation.id,
+    repositoryId: repository.id,
+    occurredAt: new Date().toISOString(),
+    payload: {
+      pullRequestId: pullRequest.id,
+      githubNumber: pr.number,
+      sha: pr.head.sha,
+      headBranch: pr.head.ref,
+      baseBranch: pr.base.ref,
+      authorLogin: pr.user.login,
+      isFork,
+      title: pr.title,
+      body: pr.body ?? null,
+    },
+  });
 
   console.log(`Created run for PR #${pr.number} in ${repoData.full_name}`);
 }

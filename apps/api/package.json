@@ -11,11 +11,13 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@azure/service-bus": "^7.9.5",
     "@hono/node-server": "^1.13.7",
     "@hono/zod-validator": "^0.4.3",
     "@preview-qa/db": "workspace:*",
     "@preview-qa/domain": "workspace:*",
     "@preview-qa/observability": "workspace:*",
+    "@preview-qa/schemas": "workspace:*",
     "hono": "^4.6.17",
     "jose": "^5.9.6",
     "zod": "^3.24.1"
