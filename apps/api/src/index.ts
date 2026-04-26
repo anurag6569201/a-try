@@ -10,6 +10,7 @@ import repoRoutes from './routes/repos.js';
 import runRoutes from './routes/runs.js';
 import streamRoutes from './routes/stream.js';
 import analyticsRoutes from './routes/analytics.js';
+import webhookRoutes from './routes/webhooks.js';
 
 const app = new Hono();
 
@@ -27,6 +28,7 @@ app.use('*', logger());
 app.get('/health', (c) => c.json({ ok: true, ts: new Date().toISOString() }));
 
 app.route('/auth', authRoutes);
+app.route('/webhooks', webhookRoutes);
 app.route('/api/installations', installationRoutes);
 app.route('/api/installations', repoRoutes);
 app.route('/api/installations', runRoutes);
