@@ -1,5 +1,6 @@
 import type { Context, Next } from 'hono';
 import { getCookie } from 'hono/cookie';
+import { getPool } from '@preview-qa/db';
 import { verifySession, type SessionPayload } from '../lib/jwt.js';
 
 declare module 'hono' {
@@ -27,8 +28,18 @@ export async function requireInstallationAccess(c: Context, next: Next): Promise
   const installationId = c.req.param('installationId');
   if (!installationId) return c.json({ error: 'Missing installationId' }, 400);
 
-  if (!session.installationIds.includes(installationId)) {
-    return c.json({ error: 'Forbidden' }, 403);
+  // Check JWT cache first, then fall back to DB lookup by github_id ownership
+  if (session.installationIds.includes(installationId)) {
+    await next();
+    return;
   }
+
+  const pool = getPool();
+  const { rows } = await pool.query(
+    `SELECT id FROM installation WHERE id = $1 AND github_id = $2`,
+    [installationId, session.githubId],
+  );
+  if (rows.length === 0) return c.json({ error: 'Forbidden' }, 403);
+
   await next();
 }
