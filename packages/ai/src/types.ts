@@ -9,6 +9,8 @@ export interface AzureOpenAIConfig {
     riskClassifier: string;
     planSuggester: string;
     embeddings: string;
+    /** Model used for all 7 code review agents + synthesizer. Defaults to planNormalizer if not set. */
+    codeReview?: string;
   };
 }
 

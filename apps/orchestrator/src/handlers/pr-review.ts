@@ -101,7 +101,7 @@ export async function handlePrReview(
     {
       client: aiClient,
       pool,
-      reviewDeployment: config.ai.deployments.planNormalizer,
+      reviewDeployment: config.ai.deployments.codeReview ?? config.ai.deployments.planNormalizer,
       embeddingDeployment: config.ai.deployments.embeddings,
     },
   );

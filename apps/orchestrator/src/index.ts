@@ -50,7 +50,8 @@ function buildConfig(): OrchestratorConfig {
               failureSummarizer: process.env['AZURE_OPENAI_DEPLOY_FAILURE_SUMMARIZER'] ?? 'failure-summarizer',
               riskClassifier: process.env['AZURE_OPENAI_DEPLOY_RISK_CLASSIFIER'] ?? 'risk-classifier',
               planSuggester: process.env['AZURE_OPENAI_DEPLOY_PLAN_SUGGESTER'] ?? 'plan-suggester',
-              embeddings: process.env['AZURE_OPENAI_DEPLOY_EMBEDDINGS'] ?? 'text-embedding-3-small',
+              embeddings: process.env['AZURE_OPENAI_DEPLOY_EMBEDDINGS'] ?? 'text-embedding-3-small-1',
+              codeReview: process.env['AZURE_OPENAI_DEPLOY_CODE_REVIEW'] ?? 'gpt-4.1-1',
             },
           },
         }
