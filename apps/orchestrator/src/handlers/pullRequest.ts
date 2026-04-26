@@ -12,6 +12,7 @@ import { parsePRBody, formatParseErrors, extractYamlBlock } from '@preview-qa/pa
 import { buildPlan, suggestMissingCoverage, formatSuggestionComment, storeRunSummary, retrieveSimilarRuns, formatSimilarRunsContext } from '@preview-qa/planner';
 import { createLogger, getTracer, withSpan } from '@preview-qa/observability';
 import { createAzureOpenAIClient } from '@preview-qa/ai';
+import { handlePrReview } from './pr-review.js';
 import { transition } from '../statemachine.js';
 import { createInitialCheck, reportStateChange, reportStateChangeWithBody } from '../github-reporter.js';
 import { pollForPreview } from '../preview-poller.js';
@@ -133,6 +134,27 @@ export async function handlePullRequestEvent(
       });
 
       span.setAttribute('preview_qa.run_id', run.id);
+
+      // Fire-and-forget: AI code review runs in parallel with the test pipeline.
+      // A review failure must never block or crash the test run.
+      if (config.ai) {
+        void handlePrReview(
+          { pool, config, log },
+          {
+            pullRequestId,
+            githubNumber,
+            sha,
+            owner: owner ?? '',
+            repo: repo ?? '',
+            title: extended.title ?? '',
+            body: prBody ?? null,
+            installationGithubId: Number(installationId),
+          },
+        ).catch((err: unknown) => {
+          log.error({ err }, 'PR review pipeline failed — non-fatal');
+        });
+      }
+
       const runLog = createLogger('orchestrator', {
         installationId: String(installationId),
         repositoryId: String(repositoryId),

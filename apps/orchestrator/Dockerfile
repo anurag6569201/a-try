@@ -21,6 +21,7 @@ COPY packages/reporter/package.json ./packages/reporter/
 COPY packages/runner-playwright/package.json ./packages/runner-playwright/
 COPY packages/schemas/package.json ./packages/schemas/
 COPY packages/vercel-adapter/package.json ./packages/vercel-adapter/
+COPY packages/code-reviewer/package.json ./packages/code-reviewer/
 COPY apps/orchestrator/package.json ./apps/orchestrator/
 
 # Install dependencies
@@ -51,6 +52,8 @@ COPY packages/schemas/src ./packages/schemas/src
 COPY packages/schemas/tsconfig.json ./packages/schemas/
 COPY packages/vercel-adapter/src ./packages/vercel-adapter/src
 COPY packages/vercel-adapter/tsconfig.json ./packages/vercel-adapter/
+COPY packages/code-reviewer/src ./packages/code-reviewer/src
+COPY packages/code-reviewer/tsconfig.json ./packages/code-reviewer/
 COPY apps/orchestrator/src ./apps/orchestrator/src
 COPY apps/orchestrator/tsconfig.json ./apps/orchestrator/
 

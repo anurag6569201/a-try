@@ -15,7 +15,8 @@
       "@preview-qa/planner": ["../../packages/planner/src/index.ts"],
       "@preview-qa/onboarding": ["../../packages/onboarding/src/index.ts"],
       "@preview-qa/runner-playwright": ["../../packages/runner-playwright/src/index.ts"],
-      "@preview-qa/vercel-adapter": ["../../packages/vercel-adapter/src/index.ts"]
+      "@preview-qa/vercel-adapter": ["../../packages/vercel-adapter/src/index.ts"],
+      "@preview-qa/code-reviewer": ["../../packages/code-reviewer/src/index.ts"]
     }
   },
   "include": [
@@ -31,6 +32,7 @@
     "../../packages/planner/src",
     "../../packages/onboarding/src",
     "../../packages/runner-playwright/src",
-    "../../packages/vercel-adapter/src"
+    "../../packages/vercel-adapter/src",
+    "../../packages/code-reviewer/src"
   ]
 }

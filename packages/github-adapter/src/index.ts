@@ -3,3 +3,4 @@ export * from './types.js';
 export * from './checks.js';
 export * from './comments.js';
 export * from './pulls.js';
+export * from './review.js';

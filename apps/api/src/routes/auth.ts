@@ -26,7 +26,7 @@ app.get('/github', (c) => {
     maxAge: 600,
     path: '/',
   });
-  return c.redirect(`https://github.com/login/oauth/authorize?${params}`);
+  return c.redirect(`https://github.com/login/oauth/authorize?${params.toString()}`);
 });
 
 app.get('/callback', async (c) => {

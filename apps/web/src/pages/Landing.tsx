@@ -63,15 +63,15 @@ export function Landing() {
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-24 text-center">
         <div className="inline-flex items-center gap-2 bg-brand-50 text-brand-700 text-sm font-medium px-3 py-1 rounded-full mb-6 border border-brand-200">
-          <Zap className="w-3.5 h-3.5" /> Now with AI failure classification
+          <Zap className="w-3.5 h-3.5" /> AI-powered · Zero config · Live now
         </div>
         <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight tracking-tight mb-6">
-          Playwright QA on<br />
-          <span className="text-brand-600">every Vercel preview</span>
+          Catch bugs before<br />
+          <span className="text-brand-600">they reach production</span>
         </h1>
         <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-          PreviewQA runs your Playwright tests automatically against every preview deployment.
-          Results appear as GitHub Check + PR comment — before you merge.
+          PreviewQA automatically runs Playwright tests on every Vercel preview deployment.
+          Get a GitHub Check, PR comment, and AI failure analysis — in minutes, not hours.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button size="lg" asChild>
@@ -80,12 +80,12 @@ export function Landing() {
             </a>
           </Button>
           <Button size="lg" variant="secondary" asChild>
-            <Link to="/docs/quickstart">
-              Read the docs <ArrowRight className="w-4 h-4" />
+            <Link to="/app/dashboard">
+              Go to dashboard <ArrowRight className="w-4 h-4" />
             </Link>
           </Button>
         </div>
-        <p className="text-xs text-gray-400 mt-4">Free tier — 50 runs/month, no credit card required</p>
+        <p className="text-xs text-gray-400 mt-4">Free tier — 50 runs/month · No credit card · No config required</p>
 
         {/* Mock terminal */}
         <div className="mt-16 max-w-3xl mx-auto bg-gray-900 rounded-2xl shadow-2xl overflow-hidden text-left">

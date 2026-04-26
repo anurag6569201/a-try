@@ -1,0 +1,25 @@
+{
+  "name": "@preview-qa/code-reviewer",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@preview-qa/ai": "workspace:*",
+    "@preview-qa/domain": "workspace:*",
+    "openai": "^4.67.0",
+    "pg": "^8.12.0",
+    "ts-morph": "^23.0.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.0",
+    "typescript": "*",
+    "vitest": "^2.0.0"
+  }
+}
