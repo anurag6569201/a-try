@@ -91,6 +91,63 @@ export interface UsageStats {
   active_repos: number;
 }
 
+export type ReviewScore = 'lgtm' | 'minor' | 'major' | 'block';
+export type ReviewSeverity = 'error' | 'warning' | 'info';
+export type ReviewAgent =
+  | 'security' | 'logic' | 'type_safety' | 'performance'
+  | 'test_coverage' | 'architecture' | 'documentation' | 'synthesizer';
+
+export interface ReviewRecord {
+  id: string;
+  pull_request_id: string;
+  score: ReviewScore;
+  risk_level: string;
+  agents_run: number;
+  findings_count: number;
+  github_comment_id: number | null;
+  github_review_id: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReviewFinding {
+  id: string;
+  review_id: string;
+  agent: ReviewAgent;
+  severity: ReviewSeverity;
+  file: string | null;
+  line: number | null;
+  title: string;
+  body: string;
+  suggestion: string | null;
+  confidence: string;
+  created_at: string;
+}
+
+export const REVIEW_SCORE_META: Record<ReviewScore, { label: string; color: string; icon: string }> = {
+  lgtm:  { label: 'LGTM',  color: 'bg-green-100 text-green-700',   icon: '✅' },
+  minor: { label: 'Minor', color: 'bg-yellow-100 text-yellow-700', icon: '💛' },
+  major: { label: 'Major', color: 'bg-orange-100 text-orange-700', icon: '⚠️' },
+  block: { label: 'Block', color: 'bg-red-100 text-red-700',       icon: '🚫' },
+};
+
+export const REVIEW_SEVERITY_META: Record<ReviewSeverity, { label: string; color: string }> = {
+  error:   { label: 'Error',   color: 'bg-red-100 text-red-700'       },
+  warning: { label: 'Warning', color: 'bg-yellow-100 text-yellow-700' },
+  info:    { label: 'Info',    color: 'bg-blue-100 text-blue-700'     },
+};
+
+export const REVIEW_AGENT_META: Record<ReviewAgent, { label: string; color: string }> = {
+  security:      { label: 'Security',     color: 'bg-red-50 text-red-700'       },
+  logic:         { label: 'Logic',        color: 'bg-orange-50 text-orange-700' },
+  type_safety:   { label: 'Type Safety',  color: 'bg-amber-50 text-amber-700'   },
+  performance:   { label: 'Performance',  color: 'bg-yellow-50 text-yellow-700' },
+  test_coverage: { label: 'Tests',        color: 'bg-green-50 text-green-700'   },
+  architecture:  { label: 'Architecture', color: 'bg-blue-50 text-blue-700'     },
+  documentation: { label: 'Docs',         color: 'bg-purple-50 text-purple-700' },
+  synthesizer:   { label: 'Synthesizer',  color: 'bg-gray-100 text-gray-700'    },
+};
+
 export const TIER_META: Record<BillingTier, { label: string; color: string }> = {
   free:    { label: 'Free',    color: 'bg-gray-100 text-gray-600'    },
   starter: { label: 'Starter', color: 'bg-blue-100 text-blue-700'   },
