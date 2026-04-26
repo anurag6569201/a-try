@@ -6,6 +6,7 @@ import { AppLayout } from './components/layout/AppLayout.js';
 import { DocsLayout } from './pages/docs/DocsLayout.js';
 
 import { Login } from './pages/Login.js';
+import { AuthCallback } from './pages/AuthCallback.js';
 import { Landing } from './pages/Landing.js';
 import { Pricing } from './pages/Pricing.js';
 
@@ -40,6 +41,7 @@ export function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Public / marketing */}
           <Route element={<PublicLayout />}>

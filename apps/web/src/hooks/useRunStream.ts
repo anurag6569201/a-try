@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { api } from '../lib/api.js';
+import { api, getToken } from '../lib/api.js';
 import type { Run } from '../types/index.js';
 
 const ACTIVE_STATES = new Set([
@@ -14,8 +14,10 @@ export function useRunStream(iid: string, rid: string, runId: string, runState: 
   useEffect(() => {
     if (!ACTIVE_STATES.has(runState)) return;
 
-    const url = api.streamRunUrl(iid, rid, runId);
-    const es = new EventSource(url, { withCredentials: true });
+    const token = getToken();
+    const base = api.streamRunUrl(iid, rid, runId);
+    const url = token ? `${base}?token=${encodeURIComponent(token)}` : base;
+    const es = new EventSource(url);
     esRef.current = es;
 
     es.addEventListener('run', (e) => {

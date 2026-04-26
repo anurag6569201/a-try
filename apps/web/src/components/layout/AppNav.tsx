@@ -1,4 +1,4 @@
-import { Link, NavLink, useParams } from 'react-router-dom';
+import { Link, NavLink, useParams, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, GitPullRequest, Settings, ChevronRight,
   Zap, ExternalLink,
@@ -30,8 +30,13 @@ interface SidebarProps { me: { login: string; avatarUrl: string } }
 
 export function AppSidebar({ me }: SidebarProps) {
   const { installationId } = useParams();
+  const navigate = useNavigate();
   const base = installationId ? `/app/installations/${installationId}` : '/app';
-  const API_BASE = (import.meta.env['VITE_API_URL'] as string | undefined) ?? 'http://localhost:3001';
+
+  function handleSignOut() {
+    localStorage.removeItem('pqa_session');
+    navigate('/login', { replace: true });
+  }
 
   return (
     <aside className="w-60 shrink-0 bg-white border-r border-gray-200 min-h-screen flex flex-col">
@@ -67,11 +72,12 @@ export function AppSidebar({ me }: SidebarProps) {
         <div className="flex items-center gap-3 px-3 py-2">
           <img src={me.avatarUrl} alt={me.login} className="w-6 h-6 rounded-full" />
           <span className="text-sm text-gray-700 flex-1 truncate">{me.login}</span>
-          <form method="post" action={`${API_BASE}/auth/logout`}>
-            <button type="submit" className="text-xs text-gray-400 hover:text-gray-600">
-              Sign out
-            </button>
-          </form>
+          <button
+            onClick={handleSignOut}
+            className="text-xs text-gray-400 hover:text-gray-600"
+          >
+            Sign out
+          </button>
         </div>
       </div>
     </aside>
