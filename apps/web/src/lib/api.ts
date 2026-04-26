@@ -1,22 +1,27 @@
 import type { Installation, Repository, Run, Result, Artifact, ModelTrace, UsageStats } from '../types/index.js';
 
-const BASE = '/api';
+const BASE = (import.meta.env['VITE_API_URL'] as string | undefined) ?? 'http://localhost:3001';
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`);
+  const res = await fetch(`${BASE}/api${path}`, { credentials: 'include' });
+  if (res.status === 401) { window.location.href = '/login'; throw new Error('Unauthorized'); }
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
   return res.json() as Promise<T>;
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${BASE}/api${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    credentials: 'include',
   });
+  if (res.status === 401) { window.location.href = '/login'; throw new Error('Unauthorized'); }
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
   return res.json() as Promise<T>;
 }
+
+export const authUrl = `${BASE}/auth/github`;
 
 export const api = {
   installations: {
