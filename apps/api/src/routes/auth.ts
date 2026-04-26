@@ -18,7 +18,14 @@ app.get('/github', (c) => {
     scope: 'read:user read:org',
     state,
   });
-  setCookie(c, 'oauth_state', state, { httpOnly: true, sameSite: 'Lax', maxAge: 600 });
+  // Store state in a cookie — SameSite=None+Secure so it survives the GitHub redirect
+  setCookie(c, 'oauth_state', state, {
+    httpOnly: true,
+    sameSite: 'None',
+    secure: true,
+    maxAge: 600,
+    path: '/',
+  });
   return c.redirect(`https://github.com/login/oauth/authorize?${params}`);
 });
 
@@ -91,15 +98,10 @@ app.get('/callback', async (c) => {
   });
 
   deleteCookie(c, 'oauth_state');
-  setCookie(c, 'session', token, {
-    httpOnly: true,
-    sameSite: 'Lax',
-    secure: process.env['NODE_ENV'] === 'production',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/',
-  });
 
-  return c.redirect(`${APP_URL}/app/dashboard`);
+  // Pass token in URL hash — frontend stores it in localStorage and sends as Bearer header.
+  // This avoids cross-domain cookie issues (API on azurecontainerapps.io, frontend on azurestaticapps.net).
+  return c.redirect(`${APP_URL}/auth/callback#token=${token}`);
 });
 
 app.post('/logout', (c) => {
@@ -110,7 +112,9 @@ app.post('/logout', (c) => {
 app.get('/me', async (c) => {
   const { getCookie } = await import('hono/cookie');
   const { verifySession } = await import('../lib/jwt.js');
-  const token = getCookie(c, 'session');
+  const token =
+    c.req.header('Authorization')?.replace('Bearer ', '') ??
+    getCookie(c, 'session');
   if (!token) return c.json(null);
   const session = await verifySession(token);
   if (!session) return c.json(null);

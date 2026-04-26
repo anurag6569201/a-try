@@ -1,0 +1,10 @@
+FROM node:20-slim
+WORKDIR /app
+
+# Install pg directly — no pnpm needed for this one-shot script
+RUN npm install pg
+
+COPY packages/db/migrations ./packages/db/migrations
+COPY apps/api/migrate.cjs ./apps/api/
+
+CMD ["node", "apps/api/migrate.cjs"]

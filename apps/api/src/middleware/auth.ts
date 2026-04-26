@@ -9,7 +9,10 @@ declare module 'hono' {
 }
 
 export async function requireAuth(c: Context, next: Next): Promise<Response | void> {
-  const token = getCookie(c, 'session') ?? c.req.header('Authorization')?.replace('Bearer ', '');
+  const token =
+    c.req.query('token') ??
+    c.req.header('Authorization')?.replace('Bearer ', '') ??
+    getCookie(c, 'session');
   if (!token) return c.json({ error: 'Unauthorized' }, 401);
 
   const session = await verifySession(token);

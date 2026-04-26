@@ -2,14 +2,17 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AppSidebar } from './AppNav.js';
 import { PageSpinner } from '../ui/Spinner.js';
+import { BASE, getToken, clearToken } from '../../lib/api.js';
 
 interface Me { login: string; avatarUrl: string; installationIds: string[] }
 
-const API_BASE = (import.meta.env['VITE_API_URL'] as string | undefined) ?? 'http://localhost:3001';
-
 async function fetchMe(): Promise<Me | null> {
-  const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
-  if (!res.ok) return null;
+  const token = getToken();
+  if (!token) return null;
+  const res = await fetch(`${BASE}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) { clearToken(); return null; }
   return res.json() as Promise<Me | null>;
 }
 
