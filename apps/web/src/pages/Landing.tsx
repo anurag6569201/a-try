@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Zap, GitPullRequest, ShieldCheck, BarChart2, Clock, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Zap, GitPullRequest, ShieldCheck, BarChart2, Clock, ArrowRight, Bot, Code2 } from 'lucide-react';
 import { Button } from '../components/ui/Button.js';
 
 const FEATURES = [
@@ -7,6 +7,11 @@ const FEATURES = [
     icon: <Zap className="w-5 h-5" />,
     title: 'Zero config to first run',
     desc: 'Install the GitHub App and get a Playwright smoke test on your next PR — no code changes required.',
+  },
+  {
+    icon: <Bot className="w-5 h-5" />,
+    title: 'AI code review — 7 agents',
+    desc: 'Security, logic, type-safety, performance, test coverage, architecture, and docs agents review every PR in parallel.',
   },
   {
     icon: <GitPullRequest className="w-5 h-5" />,
@@ -63,7 +68,7 @@ export function Landing() {
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-24 text-center">
         <div className="inline-flex items-center gap-2 bg-brand-50 text-brand-700 text-sm font-medium px-3 py-1 rounded-full mb-6 border border-brand-200">
-          <Zap className="w-3.5 h-3.5" /> AI-powered · Zero config · Live now
+          <Zap className="w-3.5 h-3.5" /> AI-powered · 7-agent code review · Zero config · Live now
         </div>
         <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight tracking-tight mb-6">
           Catch bugs before<br />
@@ -190,6 +195,59 @@ steps:
       selector: '[data-testid="project-card"]'
   - screenshot: after-create
 <!-- previewqa:end -->`}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Code Review section */}
+      <section className="max-w-6xl mx-auto px-6 py-20">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <p className="text-brand-600 text-sm font-medium uppercase tracking-wide mb-3">AI Code Review</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">7 specialist agents, one PR comment</h2>
+            <p className="text-gray-500 leading-relaxed mb-6">
+              Every PR gets a parallel review by seven LLM agents — each a specialist. Findings are grounded in your
+              project's history so repeat noise is suppressed. Results land as inline GitHub annotations and a sticky summary.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Security', color: 'bg-red-50 text-red-700 border-red-100', desc: 'OWASP + CVE lookup' },
+                { label: 'Logic', color: 'bg-orange-50 text-orange-700 border-orange-100', desc: 'Race conditions, off-by-ones' },
+                { label: 'Type Safety', color: 'bg-amber-50 text-amber-700 border-amber-100', desc: 'any, !, untyped JSON' },
+                { label: 'Performance', color: 'bg-yellow-50 text-yellow-700 border-yellow-100', desc: 'N+1, missing LIMIT' },
+                { label: 'Test Coverage', color: 'bg-green-50 text-green-700 border-green-100', desc: 'Missing error cases' },
+                { label: 'Architecture', color: 'bg-blue-50 text-blue-700 border-blue-100', desc: 'Layer violations, deps' },
+                { label: 'Docs', color: 'bg-purple-50 text-purple-700 border-purple-100', desc: 'Missing JSDoc, stale docs' },
+              ].map((agent) => (
+                <div key={agent.label} className={`border rounded-lg px-3 py-2 ${agent.color}`}>
+                  <p className="text-xs font-semibold">{agent.label}</p>
+                  <p className="text-xs opacity-75">{agent.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-gray-900 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
+              <Code2 className="w-4 h-4 text-purple-400" />
+              <span className="text-xs text-gray-300 font-medium">AI Review — PR #47</span>
+              <span className="ml-auto text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium">Block</span>
+            </div>
+            <div className="p-5 font-mono text-xs space-y-3">
+              <div className="border border-red-800/50 bg-red-900/20 rounded-lg p-3">
+                <p className="text-red-400 font-semibold mb-1">🔒 Security · Error</p>
+                <p className="text-gray-300">SQL injection via unsanitized req.query.id in /api/users</p>
+                <p className="text-gray-500 mt-1">src/routes/users.ts:42</p>
+              </div>
+              <div className="border border-orange-800/50 bg-orange-900/20 rounded-lg p-3">
+                <p className="text-orange-400 font-semibold mb-1">🔄 Logic · Warning</p>
+                <p className="text-gray-300">Missing await on sendEmail() — fire-and-forget can mask errors</p>
+                <p className="text-gray-500 mt-1">src/services/auth.ts:89</p>
+              </div>
+              <div className="border border-green-800/50 bg-green-900/20 rounded-lg p-3">
+                <p className="text-green-400 font-semibold mb-1">✅ Architecture · Info</p>
+                <p className="text-gray-300">5 agents passed with no findings</p>
+              </div>
             </div>
           </div>
         </div>

@@ -1,0 +1,55 @@
+name: CD — Migrate DB
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/db/migrations/**'
+      - '.github/workflows/cd-migrate.yml'
+
+concurrency:
+  group: cd-migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Run DB Migrations
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Trigger migration job
+        run: |
+          EXECUTION=$(az containerapp job start \
+            --name previewqa-migrate \
+            --resource-group preview-qa-agent-rg \
+            --query "name" -o tsv)
+          echo "Migration execution: $EXECUTION"
+          echo "EXECUTION=$EXECUTION" >> $GITHUB_ENV
+
+      - name: Wait for migration to complete
+        run: |
+          for i in $(seq 1 30); do
+            STATUS=$(az containerapp job execution show \
+              --name previewqa-migrate \
+              --resource-group preview-qa-agent-rg \
+              --job-execution-name "$EXECUTION" \
+              --query "properties.status" -o tsv)
+            echo "Status: $STATUS"
+            if [ "$STATUS" = "Succeeded" ]; then
+              echo "Migration succeeded"
+              exit 0
+            elif [ "$STATUS" = "Failed" ]; then
+              echo "Migration failed"
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "Migration timed out"
+          exit 1

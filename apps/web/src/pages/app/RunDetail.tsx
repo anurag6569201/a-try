@@ -12,6 +12,7 @@ import { Card, CardHeader, CardBody } from '../../components/ui/Card.js';
 import { PageSpinner } from '../../components/ui/Spinner.js';
 import { EmptyState } from '../../components/ui/EmptyState.js';
 import { Breadcrumb } from '../../components/layout/AppNav.js';
+import { CodeReviewPanel } from '../../components/ui/CodeReviewPanel.js';
 
 const ARTIFACT_ICONS = {
   screenshot: <Image className="w-4 h-4" />,
@@ -263,6 +264,15 @@ export function RunDetail() {
           </div>
         )}
       </Card>
+
+      {/* AI Code Review */}
+      <div className="mt-4">
+        <CodeReviewPanel
+          installationId={iid}
+          repoId={rid}
+          pullRequestId={run.pull_request_id}
+        />
+      </div>
     </div>
   );
 }

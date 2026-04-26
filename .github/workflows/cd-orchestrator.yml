@@ -1,0 +1,63 @@
+name: CD — Orchestrator
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/orchestrator/**'
+      - 'packages/ai/**'
+      - 'packages/db/**'
+      - 'packages/domain/**'
+      - 'packages/github-adapter/**'
+      - 'packages/observability/**'
+      - 'packages/onboarding/**'
+      - 'packages/parser/**'
+      - 'packages/planner/**'
+      - 'packages/reporter/**'
+      - 'packages/runner-playwright/**'
+      - 'packages/schemas/**'
+      - 'packages/vercel-adapter/**'
+      - 'packages/code-reviewer/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/cd-orchestrator.yml'
+
+concurrency:
+  group: cd-orchestrator
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Orchestrator
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build & push image to ACR
+        run: |
+          az acr build \
+            --registry previewqaacr \
+            --image previewqa-orchestrator:${{ github.sha }} \
+            --image previewqa-orchestrator:latest \
+            --file apps/orchestrator/Dockerfile \
+            .
+
+      - name: Deploy to Container App
+        run: |
+          az containerapp update \
+            --name previewqa-orchestrator \
+            --resource-group preview-qa-agent-rg \
+            --image previewqaacr.azurecr.io/previewqa-orchestrator:${{ github.sha }}
+
+      - name: Verify deployment
+        run: |
+          az containerapp revision list \
+            --name previewqa-orchestrator \
+            --resource-group preview-qa-agent-rg \
+            --query "[0].{name:name,active:properties.active,replicas:properties.replicas}" \
+            -o table

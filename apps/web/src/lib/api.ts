@@ -1,5 +1,6 @@
 import type {
   Installation, Repository, Run, Result, Artifact, ModelTrace, UsageStats,
+  ReviewRecord, ReviewFinding,
 } from '../types/index.js';
 
 export const BASE = (import.meta.env['VITE_API_URL'] as string | undefined) ?? 'http://localhost:3001';
@@ -103,6 +104,13 @@ export const api = {
       get<Analytics>(`/installations/${iid}/analytics?days=${days}`),
     repo: (iid: string, rid: string, days = 30) =>
       get<RepoAnalytics>(`/installations/${iid}/repos/${rid}/analytics?days=${days}`),
+  },
+
+  review: {
+    getByPR: (iid: string, rid: string, prId: string) =>
+      get<ReviewRecord | null>(`/installations/${iid}/repos/${rid}/pull-requests/${prId}/review`),
+    findings: (reviewId: string) =>
+      get<ReviewFinding[]>(`/reviews/${reviewId}/findings`),
   },
 
   streamRunUrl: (iid: string, rid: string, runId: string) =>

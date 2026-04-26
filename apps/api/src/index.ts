@@ -11,6 +11,7 @@ import runRoutes from './routes/runs.js';
 import streamRoutes from './routes/stream.js';
 import analyticsRoutes from './routes/analytics.js';
 import webhookRoutes from './routes/webhooks.js';
+import { installationReviewRoutes, reviewRoutes } from './routes/reviews.js';
 
 const app = new Hono();
 
@@ -34,6 +35,8 @@ app.route('/api/installations', repoRoutes);
 app.route('/api/installations', runRoutes);
 app.route('/api/installations', streamRoutes);
 app.route('/api/installations', analyticsRoutes);
+app.route('/api/installations', installationReviewRoutes);
+app.route('/api', reviewRoutes);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) return err.getResponse();

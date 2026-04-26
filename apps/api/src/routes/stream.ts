@@ -20,8 +20,8 @@ app.get(
   requireAuth,
   requireInstallationAccess,
   (c) => {
-    const runId = c.req.param('runId');
-    const installationId = c.req.param('installationId');
+    const runId = c.req.param('runId') ?? '';
+    const installationId = c.req.param('installationId') ?? '';
     const pool = getPool();
 
     return streamSSE(c, async (stream) => {
