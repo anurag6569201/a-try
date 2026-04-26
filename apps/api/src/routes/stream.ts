@@ -19,13 +19,13 @@ app.get(
   '/:installationId/repos/:repoId/runs/:runId/stream',
   requireAuth,
   requireInstallationAccess,
-  async (c) => {
-    const runId = c.req.param('runId')!;
-    const installationId = c.req.param('installationId')!;
+  (c) => {
+    const runId = c.req.param('runId');
+    const installationId = c.req.param('installationId');
     const pool = getPool();
 
     return streamSSE(c, async (stream) => {
-      let lastState = '';
+      let lastState: string = '';
       let ticks = 0;
       const MAX_TICKS = 120; // 10 min at 5s interval
 
@@ -37,8 +37,8 @@ app.get(
           break;
         }
 
-        if (run.state !== lastState) {
-          lastState = run.state;
+        if ((run.state as string) !== lastState) {
+          lastState = run.state as string;
           await stream.writeSSE({
             event: 'run',
             data: JSON.stringify(run),
@@ -64,7 +64,7 @@ app.get(
   '/:installationId/repos/:repoId/runs/stream',
   requireAuth,
   requireInstallationAccess,
-  async (c) => {
+  (c) => {
     const repoId = c.req.param('repoId');
     const installationId = c.req.param('installationId');
     const pool = getPool();

@@ -6,6 +6,7 @@ import {
   getArtifactsForRun,
   getModelTracesForRun,
   getRepositoryById,
+  type Run,
 } from '@preview-qa/db';
 import { requireAuth, requireInstallationAccess } from '../middleware/auth.js';
 
@@ -17,7 +18,7 @@ app.use('/:installationId/*', requireAuth, requireInstallationAccess);
 // Query params: limit (default 50, max 200), cursor (run id), state, mode, since, until
 app.get('/:installationId/repos/:repoId/runs', async (c) => {
   const pool = getPool();
-  const repo = await getRepositoryById(pool, c.req.param('repoId')!);
+  const repo = await getRepositoryById(pool, c.req.param('repoId'));
   if (!repo || repo.installation_id !== c.req.param('installationId')) {
     return c.json({ error: 'Not found' }, 404);
   }
@@ -43,7 +44,7 @@ app.get('/:installationId/repos/:repoId/runs', async (c) => {
   if (until) { conditions.push(`r.created_at <= $${idx++}`); params.push(new Date(until)); }
 
   params.push(limit + 1); // fetch one extra to determine hasMore
-  const { rows } = await pool.query(
+  const { rows } = await pool.query<Run>(
     `SELECT r.* FROM run r
      WHERE ${conditions.join(' AND ')}
      ORDER BY r.created_at DESC
@@ -53,7 +54,7 @@ app.get('/:installationId/repos/:repoId/runs', async (c) => {
 
   const hasMore = rows.length > limit;
   const data = hasMore ? rows.slice(0, limit) : rows;
-  const nextCursor = hasMore ? data[data.length - 1]?.id : null;
+  const nextCursor = hasMore ? (data[data.length - 1]?.id ?? null) : null;
 
   return c.json({ data, nextCursor, hasMore });
 });
@@ -61,7 +62,7 @@ app.get('/:installationId/repos/:repoId/runs', async (c) => {
 // GET /installations/:installationId/repos/:repoId/runs/:runId
 app.get('/:installationId/repos/:repoId/runs/:runId', async (c) => {
   const pool = getPool();
-  const run = await getRunById(pool, c.req.param('runId')!);
+  const run = await getRunById(pool, c.req.param('runId'));
   if (!run || run.installation_id !== c.req.param('installationId')) {
     return c.json({ error: 'Not found' }, 404);
   }
@@ -71,7 +72,7 @@ app.get('/:installationId/repos/:repoId/runs/:runId', async (c) => {
 // GET .../runs/:runId/results
 app.get('/:installationId/repos/:repoId/runs/:runId/results', async (c) => {
   const pool = getPool();
-  const run = await getRunById(pool, c.req.param('runId')!);
+  const run = await getRunById(pool, c.req.param('runId'));
   if (!run || run.installation_id !== c.req.param('installationId')) {
     return c.json({ error: 'Not found' }, 404);
   }
@@ -81,7 +82,7 @@ app.get('/:installationId/repos/:repoId/runs/:runId/results', async (c) => {
 // GET .../runs/:runId/artifacts
 app.get('/:installationId/repos/:repoId/runs/:runId/artifacts', async (c) => {
   const pool = getPool();
-  const run = await getRunById(pool, c.req.param('runId')!);
+  const run = await getRunById(pool, c.req.param('runId'));
   if (!run || run.installation_id !== c.req.param('installationId')) {
     return c.json({ error: 'Not found' }, 404);
   }
@@ -91,7 +92,7 @@ app.get('/:installationId/repos/:repoId/runs/:runId/artifacts', async (c) => {
 // GET .../runs/:runId/traces
 app.get('/:installationId/repos/:repoId/runs/:runId/traces', async (c) => {
   const pool = getPool();
-  const run = await getRunById(pool, c.req.param('runId')!);
+  const run = await getRunById(pool, c.req.param('runId'));
   if (!run || run.installation_id !== c.req.param('installationId')) {
     return c.json({ error: 'Not found' }, 404);
   }

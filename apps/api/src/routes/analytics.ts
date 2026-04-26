@@ -10,7 +10,7 @@ app.use('/:installationId/*', requireAuth, requireInstallationAccess);
 // Returns: runs per day (30d), pass rate, mode breakdown, avg duration, failure categories
 app.get('/:installationId/analytics', async (c) => {
   const pool = getPool();
-  const id = c.req.param('installationId')!;
+  const id = c.req.param('installationId');
   const days = Math.min(parseInt(c.req.query('days') ?? '30', 10), 90);
 
   const [runsPerDay, modeBreakdown, outcomeBreakdown, failureCategories, avgDuration, activeRepos] =
@@ -118,8 +118,8 @@ app.get('/:installationId/analytics', async (c) => {
 // GET /installations/:installationId/repos/:repoId/analytics
 app.get('/:installationId/repos/:repoId/analytics', async (c) => {
   const pool = getPool();
-  const id = c.req.param('installationId')!;
-  const repoId = c.req.param('repoId')!;
+  const id = c.req.param('installationId');
+  const repoId = c.req.param('repoId');
   const days = Math.min(parseInt(c.req.query('days') ?? '30', 10), 90);
 
   const { rows: repo } = await pool.query(

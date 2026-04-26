@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { getPool, getInstallationById, countRunsForInstallationSince } from '@preview-qa/db';
 import { requireAuth, requireInstallationAccess } from '../middleware/auth.js';
 import { TIER_LIMITS } from '../lib/tiers.js';
-import type { BillingTier } from '@preview-qa/domain';
 
 const app = new Hono();
 
@@ -50,7 +49,7 @@ app.get('/:installationId/usage', requireAuth, requireInstallationAccess, async 
     : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
   const [monthlyRuns, repoResult] = await Promise.all([
-    countRunsForInstallationSince(pool, id!, billingAnchor),
+    countRunsForInstallationSince(pool, id, billingAnchor),
     pool.query<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM repository WHERE installation_id = $1`,
       [id],
@@ -58,7 +57,7 @@ app.get('/:installationId/usage', requireAuth, requireInstallationAccess, async 
   ]);
 
   const activeRepos = parseInt(repoResult.rows[0]?.count ?? '0', 10);
-  const limits = TIER_LIMITS[installation.tier as BillingTier];
+  const limits = TIER_LIMITS[installation.tier];
   return c.json({ monthly_runs: monthlyRuns, active_repos: activeRepos, limits });
 });
 
