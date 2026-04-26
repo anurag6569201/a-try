@@ -24,7 +24,7 @@ COPY packages/vercel-adapter/package.json ./packages/vercel-adapter/
 COPY packages/code-reviewer/package.json ./packages/code-reviewer/
 COPY apps/orchestrator/package.json ./apps/orchestrator/
 
-# Install dependencies
+# Install all dependencies (including workspace packages)
 RUN pnpm install --filter @preview-qa/orchestrator... --frozen-lockfile
 
 # Copy all package sources
@@ -57,8 +57,21 @@ COPY packages/code-reviewer/tsconfig.json ./packages/code-reviewer/
 COPY apps/orchestrator/src ./apps/orchestrator/src
 COPY apps/orchestrator/tsconfig.json ./apps/orchestrator/
 
-# Build
-RUN pnpm --filter @preview-qa/orchestrator build
+# Build all workspace dependencies first, then the orchestrator
+RUN pnpm --filter @preview-qa/domain build && \
+    pnpm --filter @preview-qa/db build && \
+    pnpm --filter @preview-qa/schemas build && \
+    pnpm --filter @preview-qa/observability build && \
+    pnpm --filter @preview-qa/ai build && \
+    pnpm --filter @preview-qa/parser build && \
+    pnpm --filter @preview-qa/planner build && \
+    pnpm --filter @preview-qa/reporter build && \
+    pnpm --filter @preview-qa/github-adapter build && \
+    pnpm --filter @preview-qa/vercel-adapter build && \
+    pnpm --filter @preview-qa/runner-playwright build && \
+    pnpm --filter @preview-qa/onboarding build && \
+    pnpm --filter @preview-qa/code-reviewer build && \
+    pnpm --filter @preview-qa/orchestrator build
 
 ENV NODE_ENV=production
 
