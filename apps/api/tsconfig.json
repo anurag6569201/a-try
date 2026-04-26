@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "./dist",
+    "paths": {
+      "@preview-qa/db":            ["../../packages/db/src/index.ts"],
+      "@preview-qa/domain":        ["../../packages/domain/src/index.ts"],
+      "@preview-qa/observability": ["../../packages/observability/src/index.ts"]
+    }
+  },
+  "include": [
+    "src",
+    "../../packages/db/src",
+    "../../packages/domain/src",
+    "../../packages/observability/src"
+  ]
+}

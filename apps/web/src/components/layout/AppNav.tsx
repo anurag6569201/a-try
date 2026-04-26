@@ -26,9 +26,12 @@ function NavItem({ to, icon, label }: NavItemProps) {
   );
 }
 
-export function AppSidebar() {
+interface SidebarProps { me: { login: string; avatarUrl: string } }
+
+export function AppSidebar({ me }: SidebarProps) {
   const { installationId } = useParams();
   const base = installationId ? `/app/installations/${installationId}` : '/app';
+  const API_BASE = (import.meta.env['VITE_API_URL'] as string | undefined) ?? 'http://localhost:3001';
 
   return (
     <aside className="w-60 shrink-0 bg-white border-r border-gray-200 min-h-screen flex flex-col">
@@ -52,7 +55,7 @@ export function AppSidebar() {
         )}
       </nav>
 
-      <div className="p-3 border-t border-gray-100">
+      <div className="p-3 border-t border-gray-100 space-y-1">
         <a
           href="/docs"
           target="_blank"
@@ -61,6 +64,15 @@ export function AppSidebar() {
           <ExternalLink className="w-4 h-4" />
           Documentation
         </a>
+        <div className="flex items-center gap-3 px-3 py-2">
+          <img src={me.avatarUrl} alt={me.login} className="w-6 h-6 rounded-full" />
+          <span className="text-sm text-gray-700 flex-1 truncate">{me.login}</span>
+          <form method="post" action={`${API_BASE}/auth/logout`}>
+            <button type="submit" className="text-xs text-gray-400 hover:text-gray-600">
+              Sign out
+            </button>
+          </form>
+        </div>
       </div>
     </aside>
   );

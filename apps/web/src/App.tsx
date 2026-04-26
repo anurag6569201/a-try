@@ -5,6 +5,7 @@ import { PublicLayout } from './components/layout/PublicLayout.js';
 import { AppLayout } from './components/layout/AppLayout.js';
 import { DocsLayout } from './pages/docs/DocsLayout.js';
 
+import { Login } from './pages/Login.js';
 import { Landing } from './pages/Landing.js';
 import { Pricing } from './pages/Pricing.js';
 
@@ -38,6 +39,8 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          <Route path="/login" element={<Login />} />
+
           {/* Public / marketing */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Landing />} />

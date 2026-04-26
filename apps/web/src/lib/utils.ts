@@ -80,3 +80,8 @@ export const FAILURE_META: Record<FailureCategory, { label: string; color: strin
   flaky:              { label: 'Flaky',         color: 'bg-amber-100 text-amber-700' },
   needs_clarification:{ label: 'Needs Review',  color: 'bg-gray-100 text-gray-600' },
 };
+
+
+export function formatPercent(n: number): string {
+  return `${n}%`;
+}

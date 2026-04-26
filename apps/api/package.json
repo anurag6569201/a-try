@@ -1,0 +1,30 @@
+{
+  "name": "@preview-qa/api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "@hono/zod-validator": "^0.4.3",
+    "@preview-qa/db": "workspace:*",
+    "@preview-qa/domain": "workspace:*",
+    "@preview-qa/observability": "workspace:*",
+    "hono": "^4.6.17",
+    "jose": "^5.9.6",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "*",
+    "vitest": "^2.0.0"
+  }
+}
