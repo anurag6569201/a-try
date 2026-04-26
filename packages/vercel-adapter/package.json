@@ -2,8 +2,8 @@
   "name": "@preview-qa/vercel-adapter",
   "version": "0.0.0",
   "private": true,
-  "main": "./dist/src/index.js",
-  "types": "./dist/src/index.d.ts",
+  "main": "./dist/packages/vercel-adapter/src/index.js",
+  "types": "./dist/packages/vercel-adapter/src/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --ext .ts",

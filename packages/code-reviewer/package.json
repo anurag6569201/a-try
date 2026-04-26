@@ -2,8 +2,8 @@
   "name": "@preview-qa/code-reviewer",
   "version": "0.0.0",
   "private": true,
-  "main": "./dist/src/index.js",
-  "types": "./dist/src/index.d.ts",
+  "main": "./dist/packages/code-reviewer/src/index.js",
+  "types": "./dist/packages/code-reviewer/src/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --ext .ts",

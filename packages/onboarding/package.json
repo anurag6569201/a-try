@@ -2,7 +2,7 @@
   "name": "@preview-qa/onboarding",
   "version": "0.0.0",
   "private": true,
-  "main": "./src/index.ts",
+  "main": "./dist/packages/onboarding/src/index.js",
   "scripts": {
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
@@ -17,5 +17,6 @@
     "@types/node": "^20.0.0",
     "typescript": "*",
     "vitest": "^2.0.0"
-  }
+  },
+  "types": "./dist/packages/onboarding/src/index.d.ts"
 }
