@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { ExternalLink, Image, FileSearch, Video, FileText, Brain } from 'lucide-react';
+import { ExternalLink, Image, FileSearch, Video, FileText, Brain, Radio } from 'lucide-react';
 import { api } from '../../lib/api.js';
+import { useRunStream } from '../../hooks/useRunStream.js';
 import {
   formatRelative, formatDuration, formatBytes,
   STATE_META, MODE_META, OUTCOME_META, FAILURE_META, ARTIFACT_META,
@@ -52,9 +53,13 @@ export function RunDetail() {
     queryFn: () => api.traces(iid, rid, rnid),
   });
 
+  useRunStream(iid, rid, rnid, run?.state ?? '');
+
   if (loadingRun) return <PageSpinner />;
   if (!run) return <div className="text-gray-500">Run not found.</div>;
 
+  const ACTIVE_STATES = new Set(['queued','waiting_for_preview','planning','running','analyzing','reporting']);
+  const isLive = ACTIVE_STATES.has(run.state);
   const stateMeta = STATE_META[run.state];
   const modeMeta  = MODE_META[run.mode];
   const durationMs =
@@ -80,6 +85,11 @@ export function RunDetail() {
             <h1 className="text-xl font-bold text-gray-900 font-mono">{rnid.slice(0, 8)}</h1>
             <Badge className={stateMeta.color} dot={stateMeta.dot}>{stateMeta.label}</Badge>
             <Badge className={modeMeta.color}>{modeMeta.label}</Badge>
+            {isLive && (
+              <span className="flex items-center gap-1 text-xs text-brand-600 animate-pulse">
+                <Radio className="w-3 h-3" /> Live
+              </span>
+            )}
           </div>
           <p className="text-sm text-gray-500">
             SHA {run.sha.slice(0, 7)} · triggered by <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{run.triggered_by}</code> · {formatRelative(run.created_at)}

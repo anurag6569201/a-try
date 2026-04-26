@@ -8,6 +8,8 @@ import authRoutes from './routes/auth.js';
 import installationRoutes from './routes/installations.js';
 import repoRoutes from './routes/repos.js';
 import runRoutes from './routes/runs.js';
+import streamRoutes from './routes/stream.js';
+import analyticsRoutes from './routes/analytics.js';
 
 const app = new Hono();
 
@@ -28,6 +30,8 @@ app.route('/auth', authRoutes);
 app.route('/api/installations', installationRoutes);
 app.route('/api/installations', repoRoutes);
 app.route('/api/installations', runRoutes);
+app.route('/api/installations', streamRoutes);
+app.route('/api/installations', analyticsRoutes);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) return err.getResponse();

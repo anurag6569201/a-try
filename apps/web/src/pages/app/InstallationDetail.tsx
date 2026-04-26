@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { GitBranch, ArrowRight, Settings } from 'lucide-react';
+import { GitBranch, ArrowRight, Settings, TrendingUp } from 'lucide-react';
 import { api } from '../../lib/api.js';
-import { formatRelative } from '../../lib/utils.js';
+import { formatRelative, formatPercent } from '../../lib/utils.js';
 import { TIER_META, TIER_LIMITS } from '../../types/index.js';
 import { Badge } from '../../components/ui/Badge.js';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card.js';
@@ -11,6 +11,7 @@ import { UsageBar } from '../../components/ui/UsageBar.js';
 import { PageSpinner } from '../../components/ui/Spinner.js';
 import { EmptyState } from '../../components/ui/EmptyState.js';
 import { Breadcrumb } from '../../components/layout/AppNav.js';
+import { RunsBarChart } from '../../components/charts/RunsBarChart.js';
 
 export function InstallationDetail() {
   const { installationId } = useParams<{ installationId: string }>();
@@ -29,6 +30,12 @@ export function InstallationDetail() {
   const { data: usage } = useQuery({
     queryKey: ['usage', id],
     queryFn: () => api.usage(id),
+  });
+
+  const { data: analytics } = useQuery({
+    queryKey: ['analytics', id],
+    queryFn: () => api.analytics.installation(id, 30),
+    staleTime: 60_000,
   });
 
   if (loadingInst || loadingRepos) return <PageSpinner />;
@@ -69,8 +76,8 @@ export function InstallationDetail() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard label="Monthly runs" value={usage?.monthly_runs ?? '—'} sub={`of ${limits.runsPerMonth.toLocaleString()}`} />
         <StatCard label="Active repos" value={repos?.length ?? '—'} sub={`of ${limits.reposPerInstallation}`} />
-        <StatCard label="Concurrent cap" value={limits.concurrencyCap} sub="simultaneous runs" />
-        <StatCard label="Tier" value={tierMeta.label} sub={`$${limits.priceMonthly}/mo`} />
+        <StatCard label="Pass rate (30d)" value={analytics ? formatPercent(analytics.pass_rate) : '—'} sub={`${analytics?.total_runs ?? 0} runs`} />
+        <StatCard label="Avg duration" value={analytics ? `${Math.round((analytics.avg_duration_ms ?? 0) / 1000)}s` : '—'} sub="completed runs" />
       </div>
 
       {/* Usage bars */}
@@ -91,6 +98,21 @@ export function InstallationDetail() {
           />
         </CardBody>
       </Card>
+
+      {/* Analytics trend */}
+      {analytics && analytics.runs_per_day.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-brand-500" />
+              <h2 className="text-sm font-semibold text-gray-900">Runs over time (30d)</h2>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <RunsBarChart data={analytics.runs_per_day} />
+          </CardBody>
+        </Card>
+      )}
 
       {/* Repos */}
       <Card>
