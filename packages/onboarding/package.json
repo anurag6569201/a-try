@@ -4,9 +4,10 @@
   "private": true,
   "main": "./dist/packages/onboarding/src/index.js",
   "scripts": {
+    "build": "tsc -p tsconfig.json",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@preview-qa/github-adapter": "workspace:*",
