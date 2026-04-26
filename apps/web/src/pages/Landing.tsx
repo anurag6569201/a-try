@@ -64,21 +64,26 @@ const TESTIMONIALS = [
 
 export function Landing() {
   return (
-    <div className="text-gray-700">
+    <div className="text-gray-600">
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-24 text-center">
-        <div className="inline-flex items-center gap-2 bg-brand-50 text-brand-700 text-sm font-medium px-3 py-1 rounded-full mb-6 border border-brand-200">
-          <Zap className="w-3.5 h-3.5" /> AI-powered · 7-agent code review · Zero config · Live now
+      <section className="max-w-6xl mx-auto px-6 pt-24 pb-28 text-center relative">
+        {/* Subtle gradient blob */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-brand-100/40 rounded-full blur-3xl" />
         </div>
-        <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight tracking-tight mb-6">
+
+        <div className="inline-flex items-center gap-2 bg-brand-50 text-brand-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-8 border border-brand-200 tracking-wide uppercase">
+          <Zap className="w-3 h-3" /> AI-powered · 7-agent code review · Zero config
+        </div>
+        <h1 className="text-5xl md:text-[64px] font-bold text-gray-900 leading-[1.1] tracking-tight mb-6">
           Catch bugs before<br />
           <span className="text-brand-600">they reach production</span>
         </h1>
-        <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-          PreviewQA automatically runs Playwright tests on every Vercel preview deployment.
-          Get a GitHub Check, PR comment, and AI failure analysis — in minutes, not hours.
+        <p className="text-lg text-gray-500 max-w-xl mx-auto mb-10 leading-relaxed">
+          PreviewQA runs Playwright tests and AI code review on every Vercel preview.
+          GitHub Check, PR comment, inline annotations — in minutes.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button size="lg" asChild>
             <a href="https://github.com/apps/preview-qa" target="_blank" rel="noopener noreferrer">
               Install on GitHub — it's free
@@ -86,11 +91,11 @@ export function Landing() {
           </Button>
           <Button size="lg" variant="secondary" asChild>
             <Link to="/app/dashboard">
-              Go to dashboard <ArrowRight className="w-4 h-4" />
+              Open dashboard <ArrowRight className="w-4 h-4" />
             </Link>
           </Button>
         </div>
-        <p className="text-xs text-gray-400 mt-4">Free tier — 50 runs/month · No credit card · No config required</p>
+        <p className="text-xs text-gray-400 mt-4">Free tier · 50 runs/month · No credit card · No config required</p>
 
         {/* Mock terminal */}
         <div className="mt-16 max-w-3xl mx-auto bg-gray-900 rounded-2xl shadow-2xl overflow-hidden text-left">
@@ -270,19 +275,19 @@ steps:
       </section>
 
       {/* CTA */}
-      <section className="bg-brand-600 py-20">
+      <section className="bg-gradient-to-br from-brand-700 to-brand-900 py-24">
         <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Start testing your previews today</h2>
-          <p className="text-brand-100 mb-8 text-lg">
-            Free tier gets you 50 runs/month. No credit card. No YAML required to get started.
+          <h2 className="text-3xl font-bold text-white mb-4 tracking-tight">Start testing your previews today</h2>
+          <p className="text-brand-200 mb-8 text-lg">
+            Free tier · 50 runs/month · No credit card · No YAML required.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="bg-white text-brand-700 border-0 hover:bg-brand-50" asChild>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button size="lg" variant="secondary" className="bg-white text-brand-700 border-0 hover:bg-brand-50 font-semibold" asChild>
               <a href="https://github.com/apps/preview-qa" target="_blank" rel="noopener noreferrer">
                 Install on GitHub — free
               </a>
             </Button>
-            <Button size="lg" variant="ghost" className="text-white hover:bg-brand-700" asChild>
+            <Button size="lg" variant="ghost" className="text-white border border-white/20 hover:bg-white/10" asChild>
               <Link to="/pricing">See all plans <ArrowRight className="w-4 h-4" /></Link>
             </Button>
           </div>
