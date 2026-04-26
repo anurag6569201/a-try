@@ -23,9 +23,14 @@ COPY packages/schemas/package.json ./packages/schemas/
 COPY packages/vercel-adapter/package.json ./packages/vercel-adapter/
 COPY packages/code-reviewer/package.json ./packages/code-reviewer/
 COPY apps/orchestrator/package.json ./apps/orchestrator/
+COPY apps/api/package.json ./apps/api/
+COPY apps/browser-runner/package.json ./apps/browser-runner/
+COPY apps/dashboard/package.json ./apps/dashboard/
+COPY apps/web/package.json ./apps/web/
+COPY apps/webhook-api/package.json ./apps/webhook-api/
 
-# Install all dependencies
-RUN pnpm install --filter @preview-qa/orchestrator... --frozen-lockfile
+# Install all workspace dependencies
+RUN pnpm install --frozen-lockfile
 
 # Copy all package sources
 COPY packages/ai/src ./packages/ai/src
