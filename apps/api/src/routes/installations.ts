@@ -6,15 +6,25 @@ import type { BillingTier } from '@preview-qa/domain';
 
 const app = new Hono();
 
-// GET /installations — list all installations the session user has access to
+// GET /installations — list all installations the session user has access to.
+// Queries DB by GitHub installation IDs the user has access to (via GitHub API
+// at login time) AND by direct account ownership (github_id match). This means
+// installations created after the JWT was issued are still visible.
 app.get('/', requireAuth, async (c) => {
   const session = c.get('session');
-  if (session.installationIds.length === 0) return c.json([]);
-
   const pool = getPool();
+
+  // Union: installations the JWT knows about + installations owned by this GitHub user
   const { rows } = await pool.query(
-    `SELECT * FROM installation WHERE id = ANY($1::text[]) ORDER BY account_login ASC`,
-    [session.installationIds],
+    `SELECT DISTINCT ON (id) * FROM installation
+     WHERE id = ANY($1::text[])
+        OR github_id = ANY($2::bigint[])
+     ORDER BY id, account_login ASC`,
+    [
+      session.installationIds.length ? session.installationIds : [''],
+      // githubId is the user's personal GitHub ID — matches installations they own
+      [session.githubId],
+    ],
   );
   return c.json(rows);
 });
