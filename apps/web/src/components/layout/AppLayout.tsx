@@ -28,9 +28,9 @@ export function AppLayout() {
   if (!me) return <Navigate to="/login" replace />;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50/60">
       <AppSidebar me={me} />
-      <main className="flex-1 min-w-0 p-8">
+      <main className="flex-1 min-w-0 p-6 lg:p-8 max-w-5xl">
         <Outlet />
       </main>
     </div>
