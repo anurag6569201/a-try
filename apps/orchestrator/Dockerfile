@@ -1,4 +1,4 @@
-FROM node:20-slim AS base
+FROM node:20 AS base
 WORKDIR /app
 RUN npm install -g pnpm@10
 
@@ -78,6 +78,9 @@ RUN pnpm --filter @preview-qa/runner-playwright build
 RUN pnpm --filter @preview-qa/onboarding build
 RUN pnpm --filter @preview-qa/code-reviewer build
 RUN pnpm --filter @preview-qa/orchestrator build
+
+# Install Playwright browsers and system dependencies
+RUN npx playwright install --with-deps chromium
 
 ENV NODE_ENV=production
 
