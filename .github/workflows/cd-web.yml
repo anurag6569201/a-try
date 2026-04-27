@@ -19,6 +19,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: pnpm/action-setup@v3
         with:
@@ -44,5 +46,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location: apps/web/dist
+          output_location: ''
+          api_location: ''
           skip_app_build: true
           skip_api_build: true
