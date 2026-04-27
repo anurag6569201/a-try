@@ -7,7 +7,7 @@ const FEATURES = [
   {
     icon: <Zap className="w-5 h-5" />,
     title: 'Zero config to first run',
-    desc: 'Install the GitHub App and get a Playwright smoke test on your next PR — no code changes required.',
+    desc: 'Install the GitHub App and get an AI code review on your next PR — zero configuration required.',
   },
   {
     icon: <Bot className="w-5 h-5" />,
