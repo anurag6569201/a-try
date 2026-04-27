@@ -12,7 +12,7 @@ const FEATURES = [
   {
     icon: <Bot className="w-5 h-5" />,
     title: 'AI code review — 7 agents',
-    desc: 'Security, logic, type-safety, performance, test coverage, architecture, and docs agents review every PR in parallel.',
+    desc: 'Security, logic, type-safety, performance, test coverage, architecture, and docs agents review every PR in parallel. Results posted as a single structured comment.',
   },
   {
     icon: <GitPullRequest className="w-5 h-5" />,
