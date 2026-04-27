@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Zap, GitPullRequest, ShieldCheck, BarChart2, Clock, ArrowRight, Bot, Code2 } from 'lucide-react';
+import { CheckCircle2, Zap, GitPullRequest, ShieldCheck, BarChart2, Clock, ArrowRight, Bot, Code2, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '../components/ui/Button.js';
 
 const FEATURES = [
@@ -40,6 +41,36 @@ const FEATURES = [
   },
 ];
 
+const STATS = [
+  { value: '< 2 min', label: 'median review time' },
+  { value: '7', label: 'AI agents per PR' },
+  { value: '50', label: 'free runs / month' },
+  { value: '0', label: 'config files needed' },
+];
+
+const FAQS = [
+  {
+    q: 'Does it work with any framework?',
+    a: 'PreviewQA works with any app that deploys to a URL — Vercel, Netlify, Railway, or your own infra. The Playwright runner hits a live URL so the framework is irrelevant.',
+  },
+  {
+    q: 'What happens on fork PRs?',
+    a: 'Fork PRs are automatically downgraded to smoke-only mode. No secrets leave your installation. The AI review still runs but has read-only access to the diff.',
+  },
+  {
+    q: 'How is the AI review different from a linter?',
+    a: 'Linters check syntax and style rules. Our agents reason about intent — they find race conditions, missing awaits, SQL injection, and architectural violations that no linter catches.',
+  },
+  {
+    q: 'Can I write custom test steps?',
+    a: 'Yes. Drop a YAML block in your PR description between <!-- previewqa:start --> tags. You get full Playwright actions: navigate, fill, click, assert_visible, screenshot, and login profiles.',
+  },
+  {
+    q: 'Is there a self-hosted option?',
+    a: 'Not yet — PreviewQA is cloud-only for now. The Pro plan adds private runner support on your own infrastructure. Reach out if you have specific compliance requirements.',
+  },
+];
+
 const HOW_IT_WORKS = [
   { step: '1', title: 'Install the GitHub App', desc: 'One click in GitHub Marketplace. Authorize the repos you want to monitor.' },
   { step: '2', title: 'Open a pull request', desc: 'PreviewQA detects the Vercel preview URL and waits for the deployment to go live.' },
@@ -61,6 +92,28 @@ const TESTIMONIALS = [
     name: "Priya R.", role: "Staff Engineer", company: "DevShop",
   },
 ];
+
+function FaqList() {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <div className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden">
+      {FAQS.map((faq, i) => (
+        <div key={i}>
+          <button
+            className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left hover:bg-gray-50 transition-colors"
+            onClick={() => setOpen(open === i ? null : i)}
+          >
+            <span className="font-medium text-gray-900 text-sm">{faq.q}</span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200 ${open === i ? 'rotate-180' : ''}`} />
+          </button>
+          {open === i && (
+            <div className="px-6 pb-5 text-sm text-gray-500 leading-relaxed">{faq.a}</div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function Landing() {
   return (
@@ -118,6 +171,18 @@ export function Landing() {
         </div>
       </section>
 
+      {/* Stats bar */}
+      <section className="border-y border-gray-100 bg-white">
+        <div className="max-w-4xl mx-auto px-6 py-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+          {STATS.map((s) => (
+            <div key={s.label} className="text-center">
+              <p className="text-3xl font-bold text-brand-600 tracking-tight">{s.value}</p>
+              <p className="text-sm text-gray-500 mt-1">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Features */}
       <section className="bg-gray-50 py-20">
         <div className="max-w-6xl mx-auto px-6">
@@ -141,14 +206,19 @@ export function Landing() {
 
       {/* How it works */}
       <section className="max-w-6xl mx-auto px-6 py-20">
-        <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">How it works</h2>
-        <div className="grid md:grid-cols-4 gap-8">
-          {HOW_IT_WORKS.map((step) => (
-            <div key={step.step} className="text-center">
-              <div className="w-12 h-12 bg-brand-600 text-white rounded-full flex items-center justify-center text-lg font-bold mx-auto mb-4">
+        <h2 className="text-3xl font-bold text-gray-900 text-center mb-3">How it works</h2>
+        <p className="text-gray-500 text-center mb-14 max-w-lg mx-auto">From install to first AI-reviewed PR in under 3 minutes.</p>
+        <div className="grid md:grid-cols-4 gap-0">
+          {HOW_IT_WORKS.map((step, i) => (
+            <div key={step.step} className="relative flex flex-col items-center text-center px-4">
+              {/* connector line */}
+              {i < HOW_IT_WORKS.length - 1 && (
+                <div className="hidden md:block absolute top-6 left-1/2 w-full h-px bg-brand-100" />
+              )}
+              <div className="relative z-10 w-12 h-12 bg-brand-600 text-white rounded-full flex items-center justify-center text-lg font-bold mb-4 shadow-md shadow-brand-200">
                 {step.step}
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">{step.title}</h3>
+              <h3 className="font-semibold text-gray-900 mb-2 text-sm">{step.title}</h3>
               <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
             </div>
           ))}
@@ -273,6 +343,12 @@ steps:
             </div>
           ))}
         </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="max-w-3xl mx-auto px-6 py-20">
+        <h2 className="text-3xl font-bold text-gray-900 text-center mb-10">Frequently asked questions</h2>
+        <FaqList />
       </section>
 
       {/* CTA */}
