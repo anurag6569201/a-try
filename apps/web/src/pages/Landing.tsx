@@ -7,7 +7,7 @@ const FEATURES = [
   {
     icon: <Zap className="w-5 h-5" />,
     title: 'Zero config to first run',
-    desc: 'Install the GitHub App and get a Playwright smoke test on your next PR — no code changes required.',
+    desc: 'Install the GitHub App and get an AI code review on your next PR — zero configuration required.',
   },
   {
     icon: <Bot className="w-5 h-5" />,
@@ -22,7 +22,7 @@ const FEATURES = [
   {
     icon: <ShieldCheck className="w-5 h-5" />,
     title: 'AI failure classification',
-    desc: 'Every failure is classified: product bug, test bug, environment issue, or flaky — so you fix the right thing.',
+    desc: 'Every failure is classified as product bug, test bug, environment issue, or flaky — so your team fixes the right thing fast.',
   },
   {
     icon: <BarChart2 className="w-5 h-5" />,
