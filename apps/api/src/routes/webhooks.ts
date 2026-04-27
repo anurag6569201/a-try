@@ -118,8 +118,8 @@ async function handlePullRequest(pool: ReturnType<typeof getPool>, payload: Reco
   const instData = payload['installation'] as { id: number };
 
   // Resolve installation and repo
-  const { rows: [installation] } = await pool.query<{ id: string }>(
-    `SELECT id FROM installation WHERE github_id = $1`, [instData.id],
+  const { rows: [installation] } = await pool.query<{ id: string; github_id: number }>(
+    `SELECT id, github_id FROM installation WHERE github_id = $1`, [instData.id],
   );
   if (!installation) { console.warn('Unknown installation', instData.id); return; }
 
@@ -171,7 +171,7 @@ async function handlePullRequest(pool: ReturnType<typeof getPool>, payload: Reco
     messageId: randomUUID(),
     correlationId: randomUUID(),
     eventType,
-    installationId: installation.id,
+    installationId: String(installation.github_id),
     repositoryId: repository.id,
     occurredAt: new Date().toISOString(),
     payload: {
