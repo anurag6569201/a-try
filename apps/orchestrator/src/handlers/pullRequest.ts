@@ -307,6 +307,17 @@ export async function handlePullRequestEvent(
         })();
       }
 
+      // Skip Playwright smoke run when no preview URL is configured — just post AI review
+      if (!resolvedPreviewUrl && !vercelProjectId) {
+        runLog.info({}, 'no preview URL configured — skipping smoke run, completing with AI review only');
+        const skippedResult = await transition(pool, run.id, RunState.Planning, RunState.Completed, { completedAt: new Date() });
+        if (skippedResult.success) {
+          await reportStateChangeWithBody(reporterCtx, checkRunId, RunState.Completed,
+            '**Preview QA** — AI code review complete. No preview URL configured, smoke tests skipped.\n\nTo enable smoke tests, configure a Vercel project integration.');
+        }
+        return;
+      }
+
       // Advance to Running
       const runningResult = await transition(pool, run.id, RunState.Planning, RunState.Running);
       if (!runningResult.success) return;
