@@ -1,5 +1,5 @@
 import { RunState, RunMode, EventType, ArtifactKind, ParseOutcome, BillingTier, TIER_LIMITS } from '@preview-qa/domain';
-import { createRun, cancelSupersededRuns, createAuditEvent, countActiveRunsForInstallation, getInstallationById, countRunsForInstallationSince } from '@preview-qa/db';
+import { createRun, cancelSupersededRuns, createAuditEvent, countActiveRunsForInstallation, getInstallationByGithubId, countRunsForInstallationSince } from '@preview-qa/db';
 import type { Pool } from 'pg';
 import type { PullRequestEventEnvelope } from '@preview-qa/schemas';
 import { upsertStickyComment, getInstallationOctokit, getPRChangedFiles } from '@preview-qa/github-adapter';
@@ -60,13 +60,21 @@ export async function handlePullRequestEvent(
         sha,
       });
 
+      // Resolve GitHub numeric installation ID to internal installation record
+      const installationRecord = await getInstallationByGithubId(pool, Number(installationId));
+      if (!installationRecord) {
+        log.warn({ installationId }, 'unknown installation — dropping event');
+        return;
+      }
+      const internalInstallationId = installationRecord.id;
+
       // Fork policy: downgrade to smoke-only, log audit event, and continue
       const effectiveMode = isFork ? RunMode.Smoke : (mode ?? RunMode.Smoke);
       if (isFork) {
         log.info({ githubNumber, authorLogin }, 'fork PR — downgrading to smoke-only');
         try {
           await createAuditEvent(pool, {
-            installation_id: installationId,
+            installation_id: internalInstallationId,
             event_type: 'fork_policy.downgrade',
             actor: authorLogin ?? undefined,
             payload: {
@@ -82,22 +90,20 @@ export async function handlePullRequestEvent(
       }
 
       // Billing quota: check monthly run limit against installation tier
-      const installation = await getInstallationById(pool, installationId);
-
       // Suspended installations are dropped silently
-      if (installation?.suspended_at != null) {
+      if (installationRecord.suspended_at != null) {
         log.warn({ installationId }, 'dropping event — installation is suspended');
         return;
       }
 
-      const tier = installation?.tier ?? BillingTier.Free;
+      const tier = installationRecord.tier ?? BillingTier.Free;
       const tierLimits = TIER_LIMITS[tier] ?? TIER_LIMITS[BillingTier.Free];
       // Grace period: installation had a payment failure but is still within the 7-day window
-      const inGracePeriod = installation?.grace_period_ends_at != null && installation.grace_period_ends_at > new Date();
+      const inGracePeriod = installationRecord.grace_period_ends_at != null && installationRecord.grace_period_ends_at > new Date();
       const billingPeriodStart = new Date();
       billingPeriodStart.setDate(1);
       billingPeriodStart.setHours(0, 0, 0, 0);
-      const monthlyRunCount = await countRunsForInstallationSince(pool, installationId, billingPeriodStart);
+      const monthlyRunCount = await countRunsForInstallationSince(pool, internalInstallationId, billingPeriodStart);
       if (!inGracePeriod && monthlyRunCount >= tierLimits.runsPerMonth) {
         log.warn({ monthlyRunCount, limit: tierLimits.runsPerMonth, tier, installationId }, 'monthly run quota exceeded');
         try {
@@ -116,7 +122,7 @@ export async function handlePullRequestEvent(
 
       // Concurrency cap: block new runs if installation is already at its limit
       const concurrencyCap = config.concurrencyCap ?? tierLimits.concurrencyCap;
-      const activeCount = await countActiveRunsForInstallation(pool, installationId);
+      const activeCount = await countActiveRunsForInstallation(pool, internalInstallationId);
       if (activeCount >= concurrencyCap) {
         log.warn({ activeCount, concurrencyCap, installationId }, 'concurrency cap reached — run dropped');
         return;
@@ -127,7 +133,7 @@ export async function handlePullRequestEvent(
       const run = await createRun(pool, {
         pull_request_id: pullRequestId,
         repository_id: repositoryId,
-        installation_id: installationId,
+        installation_id: internalInstallationId,
         sha,
         mode: effectiveMode,
         triggered_by: 'push',
