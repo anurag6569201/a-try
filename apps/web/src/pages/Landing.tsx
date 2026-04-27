@@ -22,7 +22,7 @@ const FEATURES = [
   {
     icon: <ShieldCheck className="w-5 h-5" />,
     title: 'AI failure classification',
-    desc: 'Every failure is classified: product bug, test bug, environment issue, or flaky — so you fix the right thing.',
+    desc: 'Every failure is classified as product bug, test bug, environment issue, or flaky — so your team fixes the right thing fast.',
   },
   {
     icon: <BarChart2 className="w-5 h-5" />,
