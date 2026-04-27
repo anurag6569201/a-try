@@ -293,10 +293,10 @@ export async function handlePullRequestEvent(
             const body = formatSuggestionComment(suggestions);
             if (body) {
               const octokit = await getInstallationOctokit(config.github, Number(installationId));
-              await octokit.issues.createComment({
+              await upsertStickyComment(octokit, {
                 owner: owner ?? '',
                 repo: repo ?? '',
-                issue_number: githubNumber,
+                pullNumber: githubNumber,
                 body,
               });
               runLog.info({ suggestionCount: suggestions.length }, 'posted AI plan suggestions');
