@@ -147,6 +147,7 @@ export async function handlePullRequestEvent(
         void handlePrReview(
           { pool, config, log },
           {
+            runId: run.id,
             pullRequestId,
             githubNumber,
             sha,
@@ -293,10 +294,10 @@ export async function handlePullRequestEvent(
             const body = formatSuggestionComment(suggestions);
             if (body) {
               const octokit = await getInstallationOctokit(config.github, Number(installationId));
-              await octokit.issues.createComment({
+              await upsertStickyComment(octokit, {
                 owner: owner ?? '',
                 repo: repo ?? '',
-                issue_number: githubNumber,
+                pullNumber: githubNumber,
                 body,
               });
               runLog.info({ suggestionCount: suggestions.length }, 'posted AI plan suggestions');
@@ -305,6 +306,21 @@ export async function handlePullRequestEvent(
             runLog.warn({ err }, 'AI plan suggestion failed — skipped');
           }
         })();
+      }
+
+      // Skip Playwright when no preview URL is configured — just post AI review
+      if (!resolvedPreviewUrl && !vercelProjectId) {
+        runLog.info({}, 'no preview URL configured — skipping smoke run, completing with AI review only');
+        const skippedResult = await transition(pool, run.id, RunState.Planning, RunState.Completed, { completedAt: new Date() });
+        if (skippedResult.success) {
+          await reportStateChangeWithBody(
+            reporterCtx,
+            checkRunId,
+            RunState.Completed,
+            '**Preview QA** — AI code review complete. No preview URL configured, smoke tests skipped.\n\nTo enable smoke tests, configure a Vercel project integration.',
+          );
+        }
+        return;
       }
 
       // Advance to Running

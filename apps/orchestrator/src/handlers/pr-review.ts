@@ -21,6 +21,7 @@ export interface PrReviewContext {
 }
 
 export interface PrReviewInput {
+  runId: string;
   pullRequestId: string;
   githubNumber: number;
   sha: string;
@@ -83,7 +84,7 @@ export async function handlePrReview(
   // Run the full review pipeline
   const output = await reviewPR(
     {
-      reviewId: input.pullRequestId,
+      reviewId: input.runId,
       prTitle: sanitizeForLlm(input.title),
       prBody: sanitizeForLlm(input.body ?? ''),
       diff,
