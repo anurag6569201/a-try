@@ -57,6 +57,8 @@ const basePrEnvelope = {
     isFork: false,
     title: 'Test PR',
     body: null,
+    owner: 'test-owner',
+    repo: 'test-repo',
   },
 };
 

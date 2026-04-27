@@ -115,6 +115,8 @@ function makeEnvelope() {
       isFork: false,
       title: 'test PR',
       body: null,
+      owner: 'test-owner',
+      repo: 'test-repo',
     },
   };
 }
