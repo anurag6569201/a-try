@@ -32,7 +32,7 @@ const FEATURES = [
   {
     icon: <Clock className="w-5 h-5" />,
     title: '/qa rerun in seconds',
-    desc: 'Comment /qa rerun on any PR. PreviewQA cancels the old run and starts fresh against the latest SHA.',
+    desc: 'Comment `/qa rerun` on any PR. PreviewQA cancels the previous run and starts a fresh test against the latest SHA.',
   },
   {
     icon: <CheckCircle2 className="w-5 h-5" />,
