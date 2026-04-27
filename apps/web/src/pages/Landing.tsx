@@ -89,11 +89,12 @@ export function Landing() {
               Install on GitHub — it's free
             </a>
           </Button>
-          <Button size="lg" variant="secondary" asChild>
-            <Link to="/app/dashboard">
-              Open dashboard <ArrowRight className="w-4 h-4" />
-            </Link>
-          </Button>
+          <Link
+            to="/app/dashboard"
+            className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+          >
+            Open dashboard <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
         <p className="text-xs text-gray-400 mt-4">Free tier · 50 runs/month · No credit card · No config required</p>
 
@@ -287,9 +288,12 @@ steps:
                 Install on GitHub — free
               </a>
             </Button>
-            <Button size="lg" variant="ghost" className="text-white border border-white/20 hover:bg-white/10" asChild>
-              <Link to="/pricing">See all plans <ArrowRight className="w-4 h-4" /></Link>
-            </Button>
+            <Link
+              to="/pricing"
+              className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium rounded-lg text-white border border-white/20 hover:bg-white/10 active:bg-white/20 transition-colors"
+            >
+              See all plans <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>

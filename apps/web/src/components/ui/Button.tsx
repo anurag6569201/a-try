@@ -1,19 +1,24 @@
 import { clsx } from 'clsx';
+import React from 'react';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface BaseProps {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
+  className?: string;
+  children?: React.ReactNode;
 }
 
-interface AnchorProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
-  loading?: boolean;
-  asChild?: true;
+interface ButtonEl extends BaseProps, Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, keyof BaseProps> {
+  asChild?: false;
 }
 
-type Props = ButtonProps & { asChild?: never } | AnchorProps & { asChild: true };
+interface AsChildEl extends BaseProps {
+  asChild: true;
+  children: React.ReactElement<{ className?: string }>;
+}
+
+type Props = ButtonEl | AsChildEl;
 
 const base = 'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed';
 const variants = {
@@ -27,13 +32,11 @@ const sizes = { sm: 'px-3 py-1.5 text-sm', md: 'px-4 py-2 text-sm', lg: 'px-6 py
 export function Button({ variant = 'primary', size = 'md', loading, className, children, asChild, ...rest }: Props) {
   const cls = clsx(base, variants[variant], sizes[size], className);
 
-  if (asChild && 'href' in rest) {
-    const { href, ...anchorRest } = rest as React.AnchorHTMLAttributes<HTMLAnchorElement>;
-    return (
-      <a href={href} className={cls} {...anchorRest}>
-        {children}
-      </a>
-    );
+  if (asChild) {
+    const child = children as React.ReactElement<{ className?: string }>;
+    return React.cloneElement(child, {
+      className: clsx(cls, child.props.className),
+    });
   }
 
   const { disabled, ...btnRest } = rest as React.ButtonHTMLAttributes<HTMLButtonElement>;
