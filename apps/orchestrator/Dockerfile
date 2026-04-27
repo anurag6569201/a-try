@@ -80,7 +80,7 @@ RUN pnpm --filter @preview-qa/code-reviewer build
 RUN pnpm --filter @preview-qa/orchestrator build
 
 # Install Playwright browsers and system dependencies
-RUN ./node_modules/.bin/playwright install --with-deps chromium
+RUN node_modules/.pnpm/node_modules/.bin/playwright install --with-deps chromium
 
 ENV NODE_ENV=production
 
