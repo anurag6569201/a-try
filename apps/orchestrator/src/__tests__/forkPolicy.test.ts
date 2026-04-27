@@ -109,6 +109,8 @@ function makeEnvelope(isFork: boolean) {
       isFork,
       title: 'test PR',
       body: null,
+      owner: 'test-owner',
+      repo: 'test-repo',
     },
   };
 }

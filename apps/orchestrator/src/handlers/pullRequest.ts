@@ -36,15 +36,15 @@ export async function handlePullRequestEvent(
   }
 
   const extended = payload as typeof payload & {
-    owner: string;
-    repo: string;
     vercelProjectId?: string;
     mode?: RunMode;
-    githubNumber: number;
     prBody?: string | null;
   };
 
-  const { pullRequestId, sha, owner, repo, vercelProjectId, mode, githubNumber, prBody, isFork, authorLogin } = extended;
+  const { pullRequestId, sha, owner, repo, vercelProjectId, mode, githubNumber, prBody, isFork, authorLogin } = {
+    ...payload,
+    ...extended,
+  };
 
   await withSpan(
     tracer,

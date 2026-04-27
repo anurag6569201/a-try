@@ -33,6 +33,8 @@ export const PullRequestEventEnvelopeSchema = ServiceBusEnvelopeSchema.extend({
     isFork: z.boolean(),
     title: z.string(),
     body: z.string().nullable(),
+    owner: z.string().default(''),
+    repo: z.string().default(''),
   }),
 });
 
