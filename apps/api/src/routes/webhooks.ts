@@ -165,6 +165,7 @@ async function handlePullRequest(pool: ReturnType<typeof getPool>, payload: Reco
   const eventType = eventTypeMap[action] ?? EventType.PullRequestOpened;
 
   const isFork = (payload['pull_request'] as { head: { repo: { fork: boolean } } })?.head?.repo?.fork ?? false;
+  const [owner, repo] = repoData.full_name.split('/');
 
   await enqueueEvent({
     messageId: randomUUID(),
@@ -183,6 +184,8 @@ async function handlePullRequest(pool: ReturnType<typeof getPool>, payload: Reco
       isFork,
       title: pr.title,
       body: pr.body ?? null,
+      owner,
+      repo,
     },
   });
 
